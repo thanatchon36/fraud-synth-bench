@@ -1,5 +1,7 @@
 # fraud-synth-bench
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23343483.svg)](https://doi.org/10.5281/zenodo.23343483)
+
 **Reproducible fraud-analytics research on synthetic data.** This repo contains a seeded transaction generator with pluggable fraud scenarios, and a pre-registered comparison of classic and modern fraud models. The comparison runs under extreme class imbalance, concept drift, ring fraud, label delay and limited investigator capacity. Every number in the paper is rebuilt by one command.
 
 > **Limitations first: this is synthetic data.** No real transactions are used anywhere. The generator encodes *published patterns* of fraud, not measurements of any real payment system. The results are evidence about how models behave under controlled mechanisms, not predictions of production performance. See [Limitations](#limitations).
@@ -105,7 +107,7 @@ tests/          pytest (generator, features, eval, runner)
 
 ## Citation
 
-See [`CITATION.cff`](CITATION.cff).
+Archived on Zenodo: [10.5281/zenodo.23343483](https://doi.org/10.5281/zenodo.23343483) (this DOI always resolves to the latest version). See [`CITATION.cff`](CITATION.cff).
 
 ## License
 
