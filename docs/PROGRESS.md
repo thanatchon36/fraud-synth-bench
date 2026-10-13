@@ -83,7 +83,7 @@
 - Tagged `v0.1.0`.
 
 **Cut / blocked (owner action needed)**
-- **CI workflow** (`.github/workflows/ci.yml`, lint + test + quick) is written but not pushed. The gh OAuth token lacks the `workflow` scope (`gh auth refresh -h github.com -s workflow`, then commit the file).
+- ~~CI workflow blocked on token scope~~ Resolved after the owner granted the `workflow` scope. CI (lint, test, quick on ubuntu-latest, CPU-only torch) is green.
 - **TabPFN** needs `TABPFN_TOKEN` (license acceptance at Prior Labs). The code path is ready.
 
 **Open issues**
