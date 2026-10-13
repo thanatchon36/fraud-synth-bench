@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+
+# Generated data (rebuilt by `make data`)
+/data/
+*.parquet
+
+# Generated results (headline run's summary + figures are force-added)
+results/runs/
+results/cache/
+results/models/
+
+# Paper build outputs
+paper/build/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
