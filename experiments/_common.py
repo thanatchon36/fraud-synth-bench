@@ -193,3 +193,13 @@ def dot_plot(
     if ref is not None:
         ax.axvline(ref, color=INK_2, linewidth=1, linestyle=(0, (3, 3)))
     style_axes(ax)
+
+
+def pretty_verdict(verdict: str, a: str, b: str) -> str:
+    """Replace model ids in a verdict with display names (longest id first)."""
+    for m in sorted({a, b}, key=len, reverse=True):
+        verdict = verdict.replace(m, f"\x00{MODEL_ORDER.index(m) if m in MODEL_ORDER else m}\x00")
+    for m in {a, b}:
+        key = f"\x00{MODEL_ORDER.index(m) if m in MODEL_ORDER else m}\x00"
+        verdict = verdict.replace(key, label(m))
+    return verdict

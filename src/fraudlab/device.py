@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import subprocess
 import time
 from pathlib import Path
 from typing import Any
@@ -70,12 +71,27 @@ def _matmul_gflops(dev: torch.device, n: int = 1024, reps: int = 10) -> float:
     return round(2 * n**3 * reps / (time.perf_counter() - t) / 1e9, 1)
 
 
+def _cpu_brand() -> str:
+    if platform.system() == "Darwin":
+        try:
+            return subprocess.run(
+                ["sysctl", "-n", "machdep.cpu.brand_string"],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            pass
+    return platform.processor() or platform.machine()
+
+
 def probe(out: str | Path = "results/hardware.json") -> dict[str, Any]:
     vm = psutil.virtual_memory()
     info: dict[str, Any] = {
         "platform": platform.platform(),
         "machine": platform.machine(),
         "processor": platform.processor(),
+        "cpu_brand": _cpu_brand(),
         "cpu_count_logical": psutil.cpu_count(),
         "cpu_count_physical": psutil.cpu_count(logical=False),
         "memory_total_gb": round(vm.total / 2**30, 1),

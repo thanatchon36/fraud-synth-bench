@@ -61,7 +61,7 @@ def fmt(value, spec: str) -> str:
 
 def render(text: str, summary: dict) -> str:
     def sub(m: re.Match) -> str:
-        expr = m.group(1)
+        expr = m.group(1).replace("\\|", "|")  # "\|" escapes the pipe inside Markdown tables
         if expr.startswith("table:"):
             return (RESULTS / "tables" / f"{expr[6:].strip()}.md").read_text().strip()
         if expr.startswith("figure:"):

@@ -17,6 +17,7 @@ from _common import (
     load_runs,
     md_table,
     paired_arrays,
+    pretty_verdict,
     save,
     stat,
     write_summary,
@@ -105,7 +106,7 @@ def main() -> None:
             f"{c.mean_diff:+.3f}",
             f"[{c.ci_low:+.3f}, {c.ci_high:+.3f}]",
             f"{c.p_holm:.3f}",
-            c.verdict,
+            pretty_verdict(c.verdict, c.a, c.b),
         ]
         for c in comps
     ]

@@ -60,3 +60,17 @@
 **Open issues**
 - Wall time of this headline run (lanes, minutes): 104 [63, 104]. It ran with extra contention from a mid-run RQ2 rerun and an RQ4 lane change, so the fresh-clone `make reproduce` in Phase 6 is the authoritative timing.
 - CI workflow still held locally (token lacks the `workflow` scope).
+
+## Phase 5: Paper (done 2026-10-13)
+
+**Shipped**
+- `paper/paper.tmpl.md` → `paper/paper.md` → `paper/paper.pdf` (13 pages) via `make paper`. All sections from MISSION §5 are present. Every number is a placeholder rendered from `results/summary.json`, and the build fails on any missing key.
+- Build pipeline: pandoc (citeproc, IEEE CSL) → Typst → PDF via the `typst` wheel. No LaTeX install needed.
+- `docs/EXEC_SUMMARY.md` rendered from `docs/EXEC_SUMMARY.tmpl.md` by the same pipeline.
+- Prose claims checked against the data. Five sentences were corrected before the first build (an overstated recovery, a mis-cited comparison, a speculative causal claim, and two hand-typed numbers).
+
+**Cut**
+- Table and figure cross-references by number (would need pandoc-crossref). Captions are numbered by Typst.
+
+**Open issues**
+- Pandoc renders tables with equal-width columns, so some cells wrap.
