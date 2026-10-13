@@ -66,11 +66,26 @@ def test_drift_protocol(tmp_path: Path) -> None:
             "retrain_every": 14,
             "recovery_days": [61, 68],
         },
-        "models": [{"name": "lgbm_default", "retrain": True}, "iforest"],
+        "models": [
+            {"name": "lgbm_default", "retrain": True},
+            {"name": "lgbm_tuned", "refit": True, "params": {"n_trials": 2}},
+            "iforest",
+        ],
     }
     run(_write(tmp_path, cfg), root=tmp_path)
     rows = _rows(tmp_path, "t_drift")
-    assert {r["model"] for r in rows} == {"lgbm_default", "lgbm_default+retrain", "iforest"}
+    assert {r["model"] for r in rows} == {
+        "lgbm_default",
+        "lgbm_default+retrain",
+        "lgbm_tuned",
+        "lgbm_tuned+refit",
+        "iforest",
+    }
+    by = {r["model"]: r for r in rows}
+    # before the first refit (days 50-64) the refit policy serves the static model
+    assert (
+        by["lgbm_tuned+refit"]["windows"]["weekly"][0] == by["lgbm_tuned"]["windows"]["weekly"][0]
+    )
     for r in rows:
         assert set(r["windows"]["segments"]) == {"pre", "post", "recovery"}
         assert len(r["windows"]["weekly"]) == 6

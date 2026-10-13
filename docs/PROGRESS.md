@@ -40,3 +40,23 @@
 **Open issues**
 - The difficulty check (D014) runs at the start of Phase 4, and may adjust `noise`.
 - Ring scenarios have only 4–8 events each at `small` with a 0.5% fraud rate, so expect high variance in RQ3.
+
+## Phase 4: Experiments (done 2026-10-13)
+
+**Shipped**
+- `fraudlab probe` → `results/hardware.json`.
+- `fraudlab.features`: 24 tabular + 11 graph past-only features, with leakage tests (future truncation, own-label invariance, brute-force velocity).
+- `fraudlab.eval`: temporal splits, metrics (AUPRC, ROC-AUC, daily P/R@k, F1 at the validation threshold, ECE, cost, latency), and the pre-registered statistics (paired t, Holm, three-way verdict).
+- `fraudlab.models`: LR, RF, LightGBM (default, Optuna-tuned, + anomaly scores), Isolation Forest, autoencoder, GRU, FT-Transformer, GraphSAGE (pure PyTorch, time-respecting sampler), and TabPFN (optional, skipped without a token).
+- `fraudlab.runner` + `fraudlab train`: YAML configs with three protocols (standard, drift, delay), resumable JSONL logs, timing.
+- Report scripts for each RQ → `results/tables`, `results/figures`, `results/summary.json`. README headline table auto-injected.
+- Headline run: all 5 RQs × 5 seeds. Logs committed in `results/runs/`.
+- Verdicts: H1a not refuted, H1b refuted, H2a/H2b not refuted, H3a/H3b not refuted, H4a/H4b not refuted (H4b only through a wide CI), H5a not refuted, H5b refuted.
+
+**Cut / changed**
+- TabPFN didn't run (license token, D019). PyG replaced by plain PyTorch (D019).
+- Budget measures D025, D026, D028. RQ2 retraining protocol fixed after the first run (D029). RQ4 validation confound documented (D030).
+
+**Open issues**
+- Wall time of this headline run (lanes, minutes): 104 [63, 104]. It ran with extra contention from a mid-run RQ2 rerun and an RQ4 lane change, so the fresh-clone `make reproduce` in Phase 6 is the authoritative timing.
+- CI workflow still held locally (token lacks the `workflow` scope).

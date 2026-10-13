@@ -98,10 +98,10 @@ def main() -> None:
     h3a = (
         "refuted"
         if any(c.h == "H3a" and c.verdict.startswith("graphsage beats") for c in comps)
-        else "supported"
+        else "not refuted"
     )
     h3b_wins = [c for c in comps if c.h == "H3b" and c.verdict.startswith("lgbm_tuned+graph beats")]
-    h3b = "supported" if h3b_wins else "refuted"
+    h3b = "not refuted" if h3b_wins else "refuted"
 
     fig, ax = plt.subplots(figsize=(6.5, 4))
     x = np.array(SHARES) * 100
@@ -125,7 +125,7 @@ def main() -> None:
     ax.set_xlabel("Share of fraud from ring scenarios", color=INK_2)
     ax.set_ylabel("Test AUPRC (mean, 95% CI)", color=INK_2)
     style_axes(ax)
-    ax.legend(frameon=False, fontsize=8)
+    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3)
     ax.set_title(
         "RQ3: graph structure vs. model family (small preset, 0.5% fraud)", loc="left", fontsize=11
     )
@@ -137,6 +137,7 @@ def main() -> None:
             "auprc": {m: {f"{s}": auprc[m][s] for s in SHARES} for m in MODELS},
             "ring_recall": {m: {f"{s}": v for s, v in rrec[m].items()} for m in MODELS},
             "tests": [c.to_dict() | {"share": c.share, "hypothesis": c.h} for c in comps],
+            "tests_keyed": {f"{c.a}_vs_{c.b}@{c.share}": c.to_dict() for c in comps},
             "hypotheses": {"H3a": h3a, "H3b": h3b},
         },
     )

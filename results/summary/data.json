@@ -1,0 +1,49 @@
+{
+  "n_scenarios": 8,
+  "small": {
+    "content_hash": "858b01351cd6611f",
+    "fraud_budget_by_scenario": {
+      "account_takeover": 124,
+      "bust_out": 123,
+      "card_testing": 124,
+      "friendly_fraud": 123,
+      "merchant_collusion": 123,
+      "mule_network": 123,
+      "synthetic_identity": 123,
+      "velocity_abuse": 124
+    },
+    "fraud_rate": 0.005002534211860111,
+    "n_accounts": 20101,
+    "n_bust_out_accounts_terminated": 7,
+    "n_days": 30,
+    "n_devices": 21585,
+    "n_edges": 146780,
+    "n_fraud": 987,
+    "n_legit_planned": 196386,
+    "n_merchants": 1006,
+    "n_transactions": 197300,
+    "noise": 0.4
+  },
+  "small_long": {
+    "fraud_budget_by_scenario": {
+      "account_takeover": 125,
+      "bust_out": 125,
+      "card_testing": 125,
+      "friendly_fraud": 125,
+      "merchant_collusion": 124,
+      "mule_network": 125,
+      "synthetic_identity": 124,
+      "velocity_abuse": 125
+    },
+    "fraud_rate": 0.0050020298818658875,
+    "n_accounts": 8101,
+    "n_bust_out_accounts_terminated": 8,
+    "n_days": 90,
+    "n_devices": 9154,
+    "n_edges": 100140,
+    "n_fraud": 998,
+    "n_legit_planned": 198660,
+    "n_merchants": 406,
+    "n_transactions": 199519
+  }
+}

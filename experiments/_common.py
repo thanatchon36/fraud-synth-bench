@@ -61,8 +61,11 @@ MODEL_LABEL = {
 
 
 def label(model: str) -> str:
-    base = model.removesuffix("+retrain")
-    return MODEL_LABEL.get(base, base) + (" + weekly retrain" if model.endswith("+retrain") else "")
+    for suffix, text in (("+retrain", " + weekly re-tune"), ("+refit", " + weekly refit")):
+        if model.endswith(suffix):
+            base = model.removesuffix(suffix)
+            return MODEL_LABEL.get(base, base) + text
+    return MODEL_LABEL.get(model, model)
 
 
 def load_runs(name: str) -> list[dict[str, Any]]:
@@ -145,10 +148,23 @@ def save(fig: plt.Figure, name: str) -> None:
     plt.close(fig)
 
 
+#: Explicit slot per model that appears in multi-series charts (unique, never cycled).
+COLOR_SLOT = {
+    "lgbm_tuned": 0,
+    "logreg": 1,
+    "gru": 2,
+    "iforest": 3,
+    "autoencoder": 4,
+    "ft_transformer": 5,
+    "graphsage": 6,
+    "lgbm_tuned+graph": 7,
+}
+
+
 def color(model: str) -> str:
     """Stable colour per model (follows the entity, never its rank)."""
-    base = model.removesuffix("+retrain")
-    return PALETTE[MODEL_ORDER.index(base) % len(PALETTE)] if base in MODEL_ORDER else INK_2
+    base = model.removesuffix("+retrain").removesuffix("+refit")
+    return PALETTE[COLOR_SLOT[base]] if base in COLOR_SLOT else INK_2
 
 
 def dot_plot(

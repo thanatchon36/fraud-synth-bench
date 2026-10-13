@@ -14,7 +14,7 @@ build/
 *.parquet
 
 # Generated results (headline run's summary + figures are force-added)
-results/runs/
+# results/runs/ is committed for the headline run (auditable per-run metrics)
 results/cache/
 results/models/
 

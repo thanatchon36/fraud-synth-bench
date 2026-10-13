@@ -160,3 +160,14 @@ class LightGBMTuned(LightGBMDefault):
 
     def predict_proba(self, data: ModelData, idx: np.ndarray) -> np.ndarray:
         return self.booster.predict(data.X[idx], num_iteration=self.best_iteration)
+
+    def refit(self, data: ModelData, rows: np.ndarray) -> LightGBMTuned:
+        """Retrain on ``rows`` with the tuned hyperparameters and round count (no validation).
+
+        Used for periodic retraining on *all* labels available at retrain time (RQ2).
+        """
+        params = _lgb_params(self.seed, **self.info["best_params"], bagging_freq=1)
+        ds = lgb.Dataset(data.X[rows], data.y_train[rows], categorical_feature=data.categorical_idx)
+        self.booster = lgb.train(params, ds, num_boost_round=max(1, self.best_iteration))
+        self.best_iteration = self.booster.current_iteration()
+        return self

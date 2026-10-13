@@ -73,11 +73,7 @@ def main() -> None:
         if per[best][COST][s] > 0
     }
     G = stat(gain)
-    h5a = (
-        "refuted"
-        if G["ci_high"] < 0.10
-        else ("supported" if G["ci_low"] >= 0.10 else "inconclusive")
-    )
+    h5a = "refuted" if G["ci_high"] < 0.10 else "not refuted"
 
     seeds = sorted(set.intersection(*(set(per[m]["auprc"]) for m in models)))
     taus = []
@@ -86,15 +82,24 @@ def main() -> None:
         c = [per[m][COST][s] for m in models]
         taus.append(float(kendalltau(a, c).statistic))
     T = stat(taus)
-    h5b = "supported" if T["mean"] >= 0.8 else "refuted"
+    h5b = "not refuted" if T["mean"] >= 0.8 else "refuted"
 
     fig, ax = plt.subplots(figsize=(6.5, 4.2))
     for m in models:
         x, y = stat(per[m]["auprc"])["mean"], stat(per[m][COST])["mean"]
         ax.plot(x, y, "o", color=PALETTE[0], markersize=8, markeredgecolor="white")
+        # Below-left for the model that sits on top of tuned LightGBM.
+        below = m == "random_forest"
         ax.annotate(
-            label(m), (x, y), textcoords="offset points", xytext=(6, 3), fontsize=8, color=INK
+            label(m),
+            (x, y),
+            textcoords="offset points",
+            xytext=(-6, -12) if below else (6, 3),
+            ha="right" if below else "left",
+            fontsize=8,
+            color=INK,
         )
+    ax.margins(x=0.15)
     ax.set_xlabel("Test AUPRC", color=INK_2)
     ax.set_ylabel("Recovered $ per investigator-hour", color=INK_2)
     style_axes(ax)
@@ -105,11 +110,26 @@ def main() -> None:
     )
     save(fig, "rq5_cost")
 
+    # Business view: share of fraud losses recovered within capacity.
+    def share(m: str) -> dict[str, float]:
+        vals = {}
+        for r in runs:
+            if r["model"] == m and r["condition"]["fraud_rate"] == RATE:
+                x = r["metrics"]
+                total = x["recovered_loss"] + x["cost_total"] - x["n_alerts"] * cm.cost_per_alert
+                vals[r["seed"]] = x["recovered_loss"] / total if total > 0 else float("nan")
+        return stat(vals)
+
+    loss_share = {m: share(m) for m in models}
+    hours_per_day = cm.alerts_per_day * cm.minutes_per_alert / 60
+
     write_summary(
         "rq5",
         {
             "per_model": {m: {k: stat(v) for k, v in per[m].items()} for m in models},
             "best_model": best,
+            "loss_recovered_share": loss_share,
+            "investigator_hours_per_day": hours_per_day,
             "el_gain": G,
             "kendall_tau": T,
             "hypotheses": {"H5a": h5a, "H5b": h5b},

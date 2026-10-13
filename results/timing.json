@@ -1,0 +1,41 @@
+{
+  "rq1": {
+    "features": 14.42,
+    "generate": 7.8,
+    "model/autoencoder": 15.58,
+    "model/ft_transformer": 794.52,
+    "model/gru": 142.3,
+    "model/iforest": 24.07,
+    "model/lgbm_default": 12.13,
+    "model/lgbm_tuned": 1680.22,
+    "model/logreg": 18.37,
+    "model/random_forest": 197.49,
+    "total": 2953.74
+  },
+  "rq2": {
+    "generate": 3.6,
+    "model/autoencoder": 4.49,
+    "model/gru": 48.04,
+    "model/iforest": 10.58,
+    "model/lgbm_tuned": 1017.35,
+    "model/logreg": 3.95,
+    "total": 3180.66
+  },
+  "rq3": {
+    "features": 17.08,
+    "generate": 7.9,
+    "model/graphsage": 401.72,
+    "model/lgbm_tuned": 1148.91,
+    "model/lgbm_tuned+graph": 1450.9,
+    "total": 3054.32
+  },
+  "rq4": {
+    "features": 12.22,
+    "generate": 4.04,
+    "model/gru": 72.23,
+    "model/lgbm_semi": 414.15,
+    "model/lgbm_tuned": 319.42,
+    "model/logreg": 13.41,
+    "total": 845.21
+  }
+}

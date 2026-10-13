@@ -22,6 +22,14 @@ def main() -> None:
     s["timing"] = _read(RESULTS / "timing.json")
     s["skipped"] = _read(RESULTS / "skipped.json")
     s["version"] = fraudlab.__version__
+    from fraudlab.features import GRAPH, TABULAR
+
+    s["n_tabular"], s["n_graph"] = len(TABULAR), len(GRAPH)
+    t = {k: v.get("total", 0.0) for k, v in s["timing"].items()}
+    # The suite runs two parallel lanes: RQ1 -> RQ4 | RQ2 -> RQ3.
+    lanes = (t.get("rq1", 0.0) + t.get("rq4", 0.0), t.get("rq2", 0.0) + t.get("rq3", 0.0))
+    s["timing_minutes"] = max(lanes) / 60
+    s["timing_lane_minutes"] = [x / 60 for x in lanes]
     s["hypotheses"] = {
         h: v
         for rq in ("rq1", "rq2", "rq3", "rq4", "rq5")

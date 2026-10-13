@@ -157,6 +157,7 @@ def _fit_eval(
         "predict_seconds": pred_s,
         "explain": _jsonable(model.explain(data, valid)) if spec.get("explain") else None,
         "_scores": p_test,
+        "_model": model,
     }
 
 
@@ -383,6 +384,18 @@ def _run_drift(cfg, cond, seed, specs, out, timing) -> None:
                 # md_r rows are the same rows as md0 (same dataset, same order)
                 composite[np.searchsorted(test, serve)] = rr["_scores"]
             rows["retrain"] = composite
+        if spec.get("refit"):
+            # Pre-registered H2b: retrain on *all* labels available at retrain time,
+            # reusing the hyperparameters tuned at deployment (DECISIONS D029).
+            model = r["_model"]
+            composite = static_scores.copy()
+            for rd in range(deploy + d["retrain_every"], n_days, d["retrain_every"]):
+                md_r = build_model_data(ds, LabelView(day(rd), "oracle"), "tabular+graph")
+                data_r = md_r.with_features(spec_features(spec))
+                model.refit(data_r, _rows(md_r, start, day(0), day(rd)))
+                serve = _rows(md_r, start, day(rd), day(min(rd + d["retrain_every"], n_days)))
+                composite[np.searchsorted(test, serve)] = model.predict_proba(data_r, serve)
+            rows["refit"] = composite
         for policy, scores in rows.items():
             windows = _window_metrics(md0, test, scores, d, deploy, n_days)
             _append(
@@ -390,7 +403,7 @@ def _run_drift(cfg, cond, seed, specs, out, timing) -> None:
                 _base_row(cfg, cond, seed, ds)
                 | {k: v for k, v in r.items() if k not in ("metrics",)}
                 | {
-                    "model": f"{spec['label']}" + ("" if policy == "static" else "+retrain"),
+                    "model": f"{spec['label']}" + ("" if policy == "static" else f"+{policy}"),
                     "policy": policy,
                     "metrics": windows["overall"],
                     "windows": windows,

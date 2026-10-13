@@ -43,3 +43,16 @@ There's no code yet in this phase, so `make test lint` doesn't apply. It starts 
 5. The D014 difficulty check on the validation window.
 6. YAML experiment configs and runner writing `results/runs/*.jsonl`. One script per RQ producing tables, figures and its slice of `results/summary.json`. Stage timing goes to `results/timing.json`.
 7. Measure the suite's wall time, and trim model count or epochs if it exceeds 90 minutes, favouring clean RQ evidence.
+
+## Phase 5: Paper (2026-10-13)
+
+1. `paper/paper.tmpl.md`: Abstract, Introduction, Related Work, Synthetic Data Framework, Experimental Setup, Results (one subsection per RQ), Threats to Validity, Reproducibility Statement, Conclusion, References. Every number is a `{{ summary.path | fmt }}` placeholder, and tables and figures are pulled from `results/`.
+2. `paper/build.py`: render the template (failing on any missing key), then pandoc (citeproc, IEEE CSL) → Typst → PDF via the `typst` wheel. No system LaTeX needed. `make paper`.
+3. `docs/EXEC_SUMMARY.tmpl.md` rendered the same way: expected loss reduction, investigator workload, operational risks, recommendation.
+4. Tone: neutral. Every place where a modern model didn't help is stated explicitly.
+
+## Phase 6: Repository and publication (2026-10-13)
+
+1. Final README (quickstart, auto-generated headline table, RQs, extension points, limitations), plus CITATION.cff.
+2. `make reproduce` on a fresh clone. If it passes clean, tag v0.1.0.
+3. CI workflow is ready but held locally until the gh token has the `workflow` scope (owner action).

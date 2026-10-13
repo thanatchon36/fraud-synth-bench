@@ -21,6 +21,38 @@ from _common import (
 )
 
 SUPERVISED = ["logreg", "lgbm_tuned", "gru"]
+
+
+def validation_positives(runs: list[dict]) -> dict[str, dict]:
+    """Frauds visible in the validation window [day 50, day 60) at deployment (day 60).
+
+    Recomputed from the generator (deterministic in the seed), so the paper can
+    report how much validation signal each label mode leaves.
+    """
+    from datetime import datetime, timedelta
+
+    import polars as pl
+
+    from fraudlab.features import LabelView, training_labels
+    from fraudlab.synth import generate, preset
+
+    out: dict[str, list[int]] = {"oracle": [], "delayed": [], "true": []}
+    for seed in sorted({r["seed"] for r in runs}):
+        ds = generate(preset("small_long", seed=seed, fraud_rate=0.005))
+        start = datetime.fromisoformat(ds.config.start_date)
+        lo, hi = start + timedelta(days=50), start + timedelta(days=60)
+        v = ds.transactions.filter((pl.col("timestamp") >= lo) & (pl.col("timestamp") < hi))
+        v = v.select("tx_id").join(ds.labels.select("tx_id", "is_fraud"), on="tx_id")
+        out["true"].append(int(v["is_fraud"].sum()))
+        for mode in ("oracle", "delayed"):
+            y = training_labels(ds, LabelView(hi, mode)).join(v.select("tx_id"), on="tx_id")
+            out[mode].append(int(y["y_train"].sum()))
+    return {
+        k: {"per_seed": v, "min": min(v), "max": max(v), "seeds_with_zero": sum(x == 0 for x in v)}
+        for k, v in out.items()
+    }
+
+
 MODELS = [*SUPERVISED, "lgbm_semi"]
 
 
@@ -68,7 +100,7 @@ def main() -> None:
     )
 
     h4a_refuting = [m for m in SUPERVISED if loss[m]["ci_high"] < 0.10]
-    h4a = "refuted" if h4a_refuting else "supported"
+    h4a = "refuted" if h4a_refuting else "not refuted"
 
     lo, ld, sd = au["lgbm_tuned"]["oracle"], au["lgbm_tuned"]["delayed"], au["lgbm_semi"]["delayed"]
     rec = {
@@ -78,11 +110,7 @@ def main() -> None:
     }
     R = stat(rec)
     gap = stat({s: lo[s] - ld[s] for s in lo if s in ld})
-    h4b = (
-        "refuted"
-        if (R["n"] == 0 or R["ci_high"] < 0.25)
-        else ("supported" if R["ci_low"] >= 0.25 else "inconclusive")
-    )
+    h4b = "refuted" if (R["n"] == 0 or R["ci_high"] < 0.25) else "not refuted"
     write_table(
         "rq4_recovery",
         md_table(
@@ -127,7 +155,7 @@ def main() -> None:
     ax.set_yticks(ys, [label(m) for m in MODELS])
     ax.set_xlabel("Test AUPRC (mean of 5 seeds)", color=INK_2)
     style_axes(ax)
-    ax.legend(frameon=False, fontsize=8, loc="lower right")
+    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2)
     ax.set_title("RQ4: effect of label delay (small_long preset)", loc="left", fontsize=11)
     save(fig, "rq4_delay")
 
@@ -141,6 +169,7 @@ def main() -> None:
             "train_positives": pos,
             "hypotheses": {"H4a": h4a, "H4b": h4b},
             "h4a_refuting_models": h4a_refuting,
+            "validation_positives": validation_positives(runs),
         },
     )
     print("RQ4", {"H4a": h4a, "H4b": h4b, "refuting": h4a_refuting, "R": R["mean"]})

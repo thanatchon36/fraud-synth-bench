@@ -1,0 +1,8 @@
+| Hyp. | Ring share | A | B | Mean Δ AUPRC | 95% CI | Holm p | Verdict |
+|---|---|---|---|---|---|---|---|
+| H3a | 0% | GraphSAGE | LightGBM + graph features | -0.326 | [-0.495, -0.157] | 0.023 | lgbm_tuned+graph beats graphsage |
+| H3a | 25% | GraphSAGE | LightGBM + graph features | -0.293 | [-0.346, -0.239] | 0.001 | lgbm_tuned+graph beats graphsage |
+| H3a | 50% | GraphSAGE | LightGBM + graph features | -0.347 | [-0.622, -0.072] | 0.050 | lgbm_tuned+graph beats graphsage |
+| H3a | 75% | GraphSAGE | LightGBM + graph features | -0.251 | [-0.567, +0.065] | 0.092 | inconclusive |
+| H3b | 50% | LightGBM + graph features | LightGBM (tuned) | +0.063 | [+0.027, +0.099] | 0.025 | lgbm_tuned+graph beats lgbm_tuned |
+| H3b | 75% | LightGBM + graph features | LightGBM (tuned) | +0.051 | [+0.037, +0.066] | 0.003 | lgbm_tuned+graph beats lgbm_tuned |

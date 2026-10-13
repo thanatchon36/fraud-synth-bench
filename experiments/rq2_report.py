@@ -23,6 +23,10 @@ SUPERVISED = ["logreg", "lgbm_tuned", "gru"]
 UNSUPERVISED = ["iforest", "autoencoder"]
 
 
+def _ci(s: dict) -> str:
+    return f"[{s['ci_low']:.2f}, {s['ci_high']:.2f}]"
+
+
 def seg(r: dict, name: str) -> float:
     v = r["windows"]["segments"][name]["auprc"]
     return float("nan") if v is None else v
@@ -31,7 +35,9 @@ def seg(r: dict, name: str) -> float:
 def main() -> None:
     runs = load_runs("rq2")
     static = {m: {r["seed"]: r for r in runs if r["model"] == m} for m in SUPERVISED + UNSUPERVISED}
-    retrain = {r["seed"]: r for r in runs if r["model"] == "lgbm_tuned+retrain"}
+    # H2b policy: refit on all labels (D029). The holdout re-tune is reported alongside.
+    retrain = {r["seed"]: r for r in runs if r["model"] == "lgbm_tuned+refit"}
+    holdout = {r["seed"]: r for r in runs if r["model"] == "lgbm_tuned+retrain"}
 
     rows, deg = [], {}
     for m, by in static.items():
@@ -67,26 +73,30 @@ def main() -> None:
     # H2a
     sup_refute = [m for m in SUPERVISED if deg[m]["degradation"]["ci_high"] < 0.30]
     uns_refute = [m for m in UNSUPERVISED if deg[m]["degradation"]["ci_low"] > 0.30]
-    h2a = "refuted" if (sup_refute or uns_refute) else "supported"
+    h2a = "refuted" if (sup_refute or uns_refute) else "not refuted"
 
     # H2b: recovery of LightGBM with weekly retraining over days 61–68.
-    rec = {}
-    for s, r in retrain.items():
-        st = static["lgbm_tuned"].get(s)
-        if st is None:
-            continue
-        a_pre, a_static, a_re = seg(st, "pre"), seg(st, "recovery"), seg(r, "recovery")
-        gap = a_pre - a_static
-        rec[s] = {
-            "pre": a_pre,
-            "static": a_static,
-            "retrain": a_re,
-            "R": (a_re - a_static) / gap if gap > 0 else float("nan"),
-        }
+    def recovery(policy_runs: dict) -> dict:
+        out = {}
+        for s_, r in policy_runs.items():
+            st = static["lgbm_tuned"].get(s_)
+            if st is None:
+                continue
+            a_pre, a_static, a_re = seg(st, "pre"), seg(st, "recovery"), seg(r, "recovery")
+            gap = a_pre - a_static
+            out[s_] = {
+                "pre": a_pre,
+                "static": a_static,
+                "retrain": a_re,
+                "R": (a_re - a_static) / gap if gap > 0 else float("nan"),
+            }
+        return out
+
+    rec = recovery(retrain)
+    rec_holdout = recovery(holdout)
     R = stat({s: v["R"] for s, v in rec.items()})
-    h2b = (
-        "refuted" if R["ci_high"] < 0.5 else ("supported" if R["ci_low"] >= 0.5 else "inconclusive")
-    )
+    R_holdout = stat({s: v["R"] for s, v in rec_holdout.items()})
+    h2b = "refuted" if R["ci_high"] < 0.5 else "not refuted"
     write_table(
         "rq2_recovery",
         md_table(
@@ -97,17 +107,25 @@ def main() -> None:
                     fmt(stat({s: v["pre"] for s, v in rec.items()})),
                 ],
                 ["AUPRC static", fmt(stat({s: v["static"] for s, v in rec.items()}))],
-                ["AUPRC weekly retrain", fmt(stat({s: v["retrain"] for s, v in rec.items()}))],
-                ["Recovery R", fmt(R, 2) + f" (95% CI [{R['ci_low']:.2f}, {R['ci_high']:.2f}])"],
+                [
+                    "AUPRC weekly refit on all labels (H2b)",
+                    fmt(stat({s: v["retrain"] for s, v in rec.items()})),
+                ],
+                ["Recovery R, refit", f"{fmt(R, 2)} (95% CI {_ci(R)})"],
+                [
+                    "AUPRC weekly re-tune with 10-day holdout",
+                    fmt(stat({s: v["retrain"] for s, v in rec_holdout.items()})),
+                ],
+                ["Recovery R, holdout re-tune", f"{fmt(R_holdout, 2)} (95% CI {_ci(R_holdout)})"],
             ],
         ),
     )
 
     # Figure: weekly AUPRC over time.
     fig, ax = plt.subplots(figsize=(8, 4))
-    series = [*SUPERVISED, *UNSUPERVISED, "lgbm_tuned+retrain"]
+    series = [*SUPERVISED, *UNSUPERVISED, "lgbm_tuned+refit"]
     for m in series:
-        rs = list(retrain.values()) if m.endswith("+retrain") else list(static[m].values())
+        rs = list(retrain.values()) if m.endswith("+refit") else list(static[m].values())
         if not rs:
             continue
         starts = [w["start"] for w in rs[0]["windows"]["weekly"]]
@@ -125,7 +143,7 @@ def main() -> None:
             markersize=5,
             linewidth=2,
             color=color(m),
-            linestyle=(0, (4, 2)) if m.endswith("+retrain") else "-",
+            linestyle=(0, (4, 2)) if m.endswith("+refit") else "-",
             label=label(m),
         )
     ax.axvline(54, color=INK_2, linewidth=1, linestyle=(0, (3, 3)))
@@ -140,7 +158,7 @@ def main() -> None:
     ax.set_xlabel("Start of 7-day test window (day)", color=INK_2)
     ax.set_ylabel("Test AUPRC (mean of 5 seeds)", color=INK_2)
     style_axes(ax)
-    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=3)
     ax.set_title(
         "RQ2: weekly AUPRC before and after drift (small_long preset)", loc="left", fontsize=11
     )
@@ -150,7 +168,12 @@ def main() -> None:
         "rq2",
         {
             "degradation": deg,
-            "recovery": {"R": R, "per_seed": rec},
+            "recovery": {
+                "R": R,
+                "per_seed": rec,
+                "R_holdout": R_holdout,
+                "per_seed_holdout": rec_holdout,
+            },
             "hypotheses": {"H2a": h2a, "H2b": h2b},
             "h2a_refuting_models": sup_refute + uns_refute,
         },

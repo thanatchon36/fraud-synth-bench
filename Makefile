@@ -4,7 +4,7 @@ UV ?= uv
 RUN := $(UV) run --locked
 SEEDS ?= 0 1 2 3 4
 
-.PHONY: help setup test test-all lint format data quick probe experiments lane-a lane-b reports reproduce clean
+.PHONY: help setup test test-all lint format data quick probe experiments lane-a lane-b reports paper reproduce clean
 CAFFEINATE := $(shell command -v caffeinate >/dev/null && echo "caffeinate -i")
 
 help:  ## list targets
@@ -44,11 +44,13 @@ probe:  ## hardware probe -> results/hardware.json
 experiments: probe  ## run every RQ config: two parallel lanes (resumable; ~90 min, M4 Air)
 	$(MAKE) -j2 lane-a lane-b
 
-lane-a:  # RQ1 (FT-Transformer load is mostly on the GPU)
-	$(CAFFEINATE) $(RUN) fraudlab train --config experiments/configs/rq1.yaml
+lane-a:  # RQ1 -> RQ4 (RQ1's FT-Transformer load is mostly on the GPU)
+	@for rq in rq1 rq4; do \
+		$(CAFFEINATE) $(RUN) fraudlab train --config experiments/configs/$$rq.yaml || exit 1; \
+	done
 
-lane-b:  # RQ2 -> RQ3 -> RQ4
-	@for rq in rq2 rq3 rq4; do \
+lane-b:  # RQ2 -> RQ3
+	@for rq in rq2 rq3; do \
 		$(CAFFEINATE) $(RUN) fraudlab train --config experiments/configs/$$rq.yaml || exit 1; \
 	done
 
@@ -60,6 +62,9 @@ reports:  ## tables, figures and results/summary.json from the run logs
 reproduce: ## everything from scratch: clean runs, experiments, reports, paper
 	rm -rf results/runs results/timing.json results/skipped.json results/summary
 	$(MAKE) experiments reports paper
+
+paper:  ## render paper.md + EXEC_SUMMARY.md from results/summary.json, build paper.pdf
+	$(RUN) python paper/build.py
 
 clean:  ## remove generated data (results are kept)
 	rm -rf data

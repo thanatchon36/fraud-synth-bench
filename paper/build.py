@@ -1,4 +1,4 @@
-"""Render paper/paper.tmpl.md with numbers from results/summary.json, then build the PDF.
+"""Render paper.tmpl.md and docs/EXEC_SUMMARY.tmpl.md from results/summary.json; build the PDF.
 
 Placeholders (every number in the paper comes from one of these):
 
@@ -115,6 +115,11 @@ def main() -> None:
     md = PAPER / "paper.md"
     md.write_text(render((PAPER / "paper.tmpl.md").read_text(), summary))
     print(f"wrote {md.relative_to(ROOT)}")
+    exec_tmpl = ROOT / "docs" / "EXEC_SUMMARY.tmpl.md"
+    if exec_tmpl.exists():
+        out = ROOT / "docs" / "EXEC_SUMMARY.md"
+        out.write_text(render(exec_tmpl.read_text(), summary))
+        print(f"wrote {out.relative_to(ROOT)}")
     if "--no-pdf" not in sys.argv:
         print(f"wrote {build_pdf(md).relative_to(ROOT)}")
 

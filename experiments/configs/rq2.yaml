@@ -14,7 +14,10 @@ drift_protocol:
   recovery_days: [61, 68]
 models:
   - logreg
-  - {name: lgbm_tuned, retrain: true, retrain_params: {n_trials: 10}}
+  # retrain: re-tune on [0, r - 10d) with a 10-day validation holdout (operational variant)
+  # refit:   refit on ALL labels before r with the deployment-time hyperparameters
+  #          (the pre-registered H2b policy; DECISIONS D029)
+  - {name: lgbm_tuned, retrain: true, refit: true, retrain_params: {n_trials: 10}}
   - gru
   - iforest
   - autoencoder

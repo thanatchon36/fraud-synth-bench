@@ -117,8 +117,8 @@ def main() -> None:
     )
 
     modern_beats = [c for c in comps if c.a in MODERN and c.verdict == f"{c.a} beats {c.b}"]
-    h1a = "refuted" if modern_beats else "supported"
-    h1b_v = "supported" if h1b.verdict == "lgbm_tuned beats lgbm_default" else "refuted"
+    h1a = "refuted" if modern_beats else "not refuted"
+    h1b_v = "not refuted" if h1b.verdict == "lgbm_tuned beats lgbm_default" else "refuted"
 
     # Which model is best on mean AUPRC at each rate?
     best = {r: max(models, key=lambda m: auprc[m][r]["mean"]) for r in RATES}
@@ -145,6 +145,7 @@ def main() -> None:
                 m: {k: stat(by_seed(runs, m, k, fraud_rate=0.005)) for k in sec} for m in models
             },
             "tests": [c.to_dict() | {"rate": c.rate} for c in comps],
+            "tests_keyed": {f"{c.a}_vs_{c.b}@{c.rate}": c.to_dict() for c in comps},
             "best_by_rate": {f"{r}": best[r] for r in RATES},
             "hypotheses": {"H1a": h1a, "H1b": h1b_v},
             "skipped_models": skipped,
