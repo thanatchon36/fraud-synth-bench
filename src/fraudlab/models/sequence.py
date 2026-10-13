@@ -11,7 +11,13 @@ from torch import nn
 
 from fraudlab.features import SEQUENCE_STEP
 from fraudlab.models.base import FraudModel, ModelData, Preprocessor
-from fraudlab.models.torch_utils import seed_everything, torch_device_for, train_early_stopped
+from fraudlab.models.torch_utils import (
+    correct_undersampling,
+    seed_everything,
+    torch_device_for,
+    train_early_stopped,
+    undersampled_epoch,
+)
 
 SEQ_LEN = 16
 
@@ -93,12 +99,13 @@ class GRUModel(FraudModel):
         n_cur = self.prep.transform(data.X[train[:10]]).shape[1]
         self.net = _GRUNet(len(num_cols), self.n_mcc, self.n_ch, n_cur).to(dev)
         y = torch.tensor(data.y_train.astype(np.float32))
-        g = torch.Generator().manual_seed(self.seed)
         bce = nn.BCEWithLogitsLoss()
 
-        def batches(_epoch: int):
-            for b in torch.randperm(len(train), generator=g).split(1024):
-                idx = train[b.numpy()]
+        self.neg_frac = float(self.params.get("neg_frac", 0.1))
+
+        def batches(epoch: int):
+            rows = undersampled_epoch(train, data.y_train, epoch, self.seed, self.neg_frac)
+            for idx in np.array_split(rows, max(1, len(rows) // 1024)):
                 yield (*[t.to(dev) for t in self._tensors(data, idx)], y[idx].to(dev))
 
         def loss_fn(*args):
@@ -112,7 +119,8 @@ class GRUModel(FraudModel):
             data.y_train[valid],
             loss_fn,
             lr=1e-3,
-            max_epochs=int(self.params.get("max_epochs", 8)),
+            max_epochs=int(self.params.get("max_epochs", 20)),
+            patience=3,
         )
         return self
 
@@ -123,4 +131,4 @@ class GRUModel(FraudModel):
         for chunk in np.array_split(idx, max(1, len(idx) // 8192)):
             x = [t.to(self.device) for t in self._tensors(data, chunk)]
             out.append(torch.sigmoid(self.net(*x)).cpu())
-        return torch.cat(out).numpy()
+        return correct_undersampling(torch.cat(out).numpy(), self.neg_frac)

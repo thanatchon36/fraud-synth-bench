@@ -33,6 +33,13 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
 ]
+# `make paper`: pandoc (system) renders Markdown to Typst; this compiles it to PDF.
+paper = [
+    "typst>=0.15",
+]
+
+[tool.uv]
+default-groups = ["dev", "paper"]
 
 [build-system]
 requires = ["hatchling"]

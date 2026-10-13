@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software or its findings, please cite it as below."
+title: "fraud-synth-bench: Reproducible fraud-analytics research on synthetic data"
+abstract: >-
+  A seeded synthetic transaction generator with pluggable fraud scenarios, drift
+  schedules and label delay, plus a pre-registered comparison of classic and modern
+  fraud-detection models under extreme imbalance, concept drift, ring fraud, label
+  delay and investigator capacity limits.
+type: software
+authors:
+  - family-names: Chongmankhong
+    given-names: Thanatchon
+license: Apache-2.0
+repository-code: "https://github.com/thanatchon36/fraud-synth-bench"
+version: 0.1.0
+date-released: "2026-10-13"
+keywords:
+  - fraud detection
+  - synthetic data
+  - benchmark
+  - reproducibility
+  - gradient boosting
+  - graph neural networks

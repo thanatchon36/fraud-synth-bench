@@ -8,7 +8,8 @@ conditions:
   ring_share: [0.0, 0.25, 0.5, 0.75]
 label_mode: oracle
 seeds: [0, 1, 2, 3, 4]
+# LightGBM arms use 15 Optuna trials here (30 in RQ1) to fit the 90-minute budget (D028).
 models:
-  - {name: lgbm_tuned, features: tabular}
-  - {name: lgbm_tuned, features: tabular+graph, explain: true}
+  - {name: lgbm_tuned, features: tabular, params: {n_trials: 15}}
+  - {name: lgbm_tuned, features: tabular+graph, explain: true, params: {n_trials: 15}}
   - {name: graphsage, features: tabular}

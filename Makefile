@@ -4,8 +4,7 @@ UV ?= uv
 RUN := $(UV) run --locked
 SEEDS ?= 0 1 2 3 4
 
-.PHONY: help setup test test-all lint format data quick probe experiments reports reproduce clean
-RQS := rq1 rq2 rq3 rq4
+.PHONY: help setup test test-all lint format data quick probe experiments lane-a lane-b reports reproduce clean
 CAFFEINATE := $(shell command -v caffeinate >/dev/null && echo "caffeinate -i")
 
 help:  ## list targets
@@ -42,8 +41,14 @@ quick:  ## smoke run (< 5 min): tiny dataset, 2 seeds, every model family
 probe:  ## hardware probe -> results/hardware.json
 	$(RUN) fraudlab probe
 
-experiments: probe  ## run every RQ config (resumable; ~90 min on an M4 Air)
-	@for rq in $(RQS); do \
+experiments: probe  ## run every RQ config: two parallel lanes (resumable; ~90 min, M4 Air)
+	$(MAKE) -j2 lane-a lane-b
+
+lane-a:  # RQ1 (FT-Transformer load is mostly on the GPU)
+	$(CAFFEINATE) $(RUN) fraudlab train --config experiments/configs/rq1.yaml
+
+lane-b:  # RQ2 -> RQ3 -> RQ4
+	@for rq in rq2 rq3 rq4; do \
 		$(CAFFEINATE) $(RUN) fraudlab train --config experiments/configs/$$rq.yaml || exit 1; \
 	done
 

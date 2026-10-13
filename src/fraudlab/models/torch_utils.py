@@ -68,3 +68,27 @@ def train_early_stopped(
     if best_state is not None:
         net.load_state_dict(best_state)
     return {"valid_auprc": best, "epochs": len(history), "valid_history": history}
+
+
+def undersampled_epoch(
+    train: np.ndarray, y: np.ndarray, epoch: int, seed: int, neg_frac: float
+) -> np.ndarray:
+    """All positive rows plus a fresh ``neg_frac`` sample of negatives, shuffled.
+
+    Each epoch sees different negatives, so over many epochs the model still sees
+    most of the data, at a fraction of the cost per epoch (DECISIONS D025).
+    """
+    rng = np.random.default_rng([seed, epoch])
+    pos = train[y[train] == 1]
+    neg = train[y[train] == 0]
+    keep = neg[rng.random(len(neg)) < neg_frac]
+    return rng.permutation(np.concatenate([pos, keep]))
+
+
+def correct_undersampling(p: np.ndarray, neg_frac: float) -> np.ndarray:
+    """Undo the probability shift of negative undersampling (``dalpozzolo2015calibrating``).
+
+    With negatives kept at rate beta, p = beta * p_s / (beta * p_s - p_s + 1). The map
+    is monotonic, so ranking metrics are unchanged and only calibration improves.
+    """
+    return neg_frac * p / (neg_frac * p - p + 1)

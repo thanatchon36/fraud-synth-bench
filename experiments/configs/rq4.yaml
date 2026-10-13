@@ -8,8 +8,9 @@ split_days: {valid: 50, test: 60}
 conditions:
   label_mode: [oracle, delayed]
 seeds: [0, 1, 2, 3, 4]
+# LightGBM arms use 15 Optuna trials here (30 in RQ1) to fit the 90-minute budget (D028).
 models:
   - logreg
-  - lgbm_tuned
+  - {name: lgbm_tuned, params: {n_trials: 15}}
   - gru
-  - lgbm_semi
+  - {name: lgbm_semi, params: {n_trials: 15}}

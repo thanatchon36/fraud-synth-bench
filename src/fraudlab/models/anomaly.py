@@ -23,7 +23,7 @@ class IForest(FraudModel):
     def fit(self, data: ModelData, train: np.ndarray, valid: np.ndarray) -> IForest:
         self.prep = Preprocessor(data.categorical_idx, self.seed).fit(data.X[train])
         self.model = IsolationForest(
-            n_estimators=200, max_samples=4096, random_state=self.seed, n_jobs=8
+            n_estimators=200, max_samples=4096, random_state=self.seed, n_jobs=5
         ).fit(self.prep.transform(data.X[train]))
         return self
 

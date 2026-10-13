@@ -186,6 +186,24 @@ def main() -> None:
     OUT.write_text("\n".join(parts))
     print(f"wrote {OUT}")
 
+    # Machine-readable slice for the paper (results/summary/data.json).
+    from _common import write_summary
+
+    long = generate(preset("small_long", seed=0))
+    write_summary(
+        "data",
+        {
+            "small": {
+                **s,
+                "content_hash": ds.content_hash()[:16],
+                "n_days": ds.config.n_days,
+                "noise": ds.config.noise,
+            },
+            "small_long": {**long.stats, "n_days": long.config.n_days},
+            "n_scenarios": len(s["fraud_budget_by_scenario"]),
+        },
+    )
+
 
 if __name__ == "__main__":
     main()

@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 
 from fraudlab.models.base import FraudModel, ModelData, Preprocessor
 
-N_JOBS = 8
+N_JOBS = 5  # fixed so results are identical serial or parallel (DECISIONS D028)
 
 
 class LogReg(FraudModel):
@@ -120,7 +120,7 @@ class LightGBMTuned(LightGBMDefault):
         def objective(trial: optuna.Trial) -> float:
             params = _lgb_params(
                 self.seed,
-                learning_rate=trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
+                learning_rate=trial.suggest_float("learning_rate", 0.02, 0.3, log=True),
                 num_leaves=trial.suggest_int("num_leaves", 8, 256, log=True),
                 min_child_samples=trial.suggest_int("min_child_samples", 5, 200, log=True),
                 feature_fraction=trial.suggest_float("feature_fraction", 0.4, 1.0),
@@ -133,9 +133,9 @@ class LightGBMTuned(LightGBMDefault):
             booster = lgb.train(
                 params,
                 dtrain,
-                num_boost_round=2000,
+                num_boost_round=1000,
                 valid_sets=[dvalid],
-                callbacks=[lgb.early_stopping(50, verbose=False)],
+                callbacks=[lgb.early_stopping(30, verbose=False)],
             )
             trial.set_user_attr("best_iteration", booster.best_iteration)
             trial.set_user_attr("booster", booster)

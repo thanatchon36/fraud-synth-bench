@@ -13,7 +13,13 @@ import torch
 from torch import nn
 
 from fraudlab.models.base import FraudModel, ModelData, Preprocessor
-from fraudlab.models.torch_utils import seed_everything, torch_device_for, train_early_stopped
+from fraudlab.models.torch_utils import (
+    correct_undersampling,
+    seed_everything,
+    torch_device_for,
+    train_early_stopped,
+    undersampled_epoch,
+)
 
 
 class _FTT(nn.Module):
@@ -60,12 +66,13 @@ class FTTransformer(FraudModel):
         self.cards = data.X[train][:, self.cat_idx].max(axis=0).astype(np.int64) + 1
         self.net = _FTT(len(self.prep.num_idx), self.cards.tolist()).to(dev)
         y = torch.tensor(data.y_train.astype(np.float32))
-        g = torch.Generator().manual_seed(self.seed)
         bce = nn.BCEWithLogitsLoss()
 
-        def batches(_epoch: int):
-            for b in torch.randperm(len(train), generator=g).split(1024):
-                idx = train[b.numpy()]
+        self.neg_frac = float(self.params.get("neg_frac", 0.1))
+
+        def batches(epoch: int):
+            rows = undersampled_epoch(train, data.y_train, epoch, self.seed, self.neg_frac)
+            for idx in np.array_split(rows, max(1, len(rows) // 1024)):
                 num, cat = self._tensors(data, idx)
                 yield num.to(dev), cat.to(dev), y[idx].to(dev)
 
@@ -77,7 +84,8 @@ class FTTransformer(FraudModel):
             lambda num, cat, yb: bce(self.net(num, cat), yb),
             lr=3e-4,
             weight_decay=1e-5,
-            max_epochs=int(self.params.get("max_epochs", 6)),
+            max_epochs=int(self.params.get("max_epochs", 20)),
+            patience=3,
         )
         return self
 
@@ -88,4 +96,4 @@ class FTTransformer(FraudModel):
         for chunk in np.array_split(idx, max(1, len(idx) // 4096)):
             num, cat = self._tensors(data, chunk)
             out.append(torch.sigmoid(self.net(num.to(self.device), cat.to(self.device))).cpu())
-        return torch.cat(out).numpy()
+        return correct_undersampling(torch.cat(out).numpy(), self.neg_frac)

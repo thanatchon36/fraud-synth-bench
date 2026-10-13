@@ -90,3 +90,52 @@ Each entry records what was decided, why, and which alternatives were rejected. 
 ### D014 outcome: noise lowered from 0.5 to 0.4 (2026-10-13, Phase 4)
 - **What:** The difficulty check (default LightGBM, `small`, seed 0, oracle labels, tabular features, validation window days 18–22) gave a validation AUPRC of **0.297 at noise 0.5**, just below the pre-registered lower bound of 0.30. Following the rule, `noise` was lowered by one step to **0.4**, which gave **0.551**. That is inside [0.30, 0.85], so 0.4 is now the default for every preset. The test window wasn't evaluated during this check.
 - **Observation, recorded for later:** a 0.1 change in noise moved validation AUPRC by 0.25. The validation window holds only 106 fraud transactions from a few dozen events, and untuned LightGBM is unstable at 0.5% prevalence. Expect high seed variance, which is why every RQ uses 5 paired seeds.
+
+### D018: Legitimate P2P transfers use round amounts (2026-10-13, Phase 4, before any experiment)
+- **What:** 50% of legitimate transfers are rounded to 10 and 20% to 50.
+- **Why:** The first feature build showed `is_round` was 0.0 for all legitimate traffic, which would make merchant collusion's round amounts a free giveaway. People really do send round sums.
+
+### D019: Optional and unavailable dependencies isolated (2026-10-13, Phase 4)
+- **TabPFN:** `tabpfn` 9.2 (Apache-2.0 code) downloads its weights only after a one-time license acceptance tied to a Prior Labs account (`TABPFN_TOKEN`). That's a credential only the repository owner can supply. TabPFN is therefore an optional extra (`uv sync --extra tabpfn`), and the runner skips it and records the skip in `results/skipped.json` when the token is absent. **RQ1's H1a is consequently tested against FT-Transformer only in the default reproduction.** The paper says so explicitly.
+- **PyTorch Geometric:** PyG's neighbour samplers need `pyg-lib` or `torch-sparse`, which have no PyPI wheels for macOS arm64 (checked with `uv pip install --dry-run`). GraphSAGE (mean aggregator, uniform fixed-fan-out sampling, as in Hamilton et al. 2017) is implemented in about 150 lines of plain PyTorch, with a **time-respecting** sampler that PyG would also need `pyg-lib` for.
+- **Rejected:** Building `torch-sparse` from source (fragile, not reproducible on a fresh Mac). Downloading TabPFN weights by other means (that would bypass the license).
+
+### D020: Label-derived features always use realistic label availability (2026-10-13, Phase 4)
+- **What:** Features such as `acc_known_fraud_cnt` and `dev_known_fraud_cnt` count only fraud whose `label_available_at` is before min(T, deployment time), whatever the target label mode.
+- **Why:** With instant (oracle) labels, training rows would see fraud labels from earlier in the *same* event, which test rows never can. That's a train/test feature shift that inflates training fit and hurts generalisation.
+
+### D021: Cost model of $40/h investigators and 10 min per alert (2026-10-13, Phase 4)
+- **What:** Alert cost = $40/h × 10 min = $6.67. Missed fraud = amount + $25 fee. The cost metrics use these values. RQ5's primary metric (recovered $ per investigator-hour) doesn't depend on the hourly rate.
+- **Why:** Round, plausible operating figures. They aren't drawn from any real institution.
+
+### D022: Per-model compute device chosen by measurement (2026-10-13, Phase 4)
+- **What:** Training time on `small`, seed 0, 2 epochs, MPS vs. CPU: autoencoder 2.2 s vs **1.0 s**; GRU **3.4 s** vs 5.2 s; FT-Transformer **31.6 s** vs 127.5 s. The autoencoder runs on CPU, while GRU and FT-Transformer use MPS (`torch_device()` default). GraphSAGE always runs on CPU (MISSION §0). Test AUPRC agreed across devices to two decimals (GRU 0.272 vs 0.273).
+- **Why:** MISSION asks for MPS when available, but at these model sizes kernel-launch overhead makes MPS slower for the tiny autoencoder. `FRAUDLAB_DEVICE` overrides the choice everywhere.
+
+### D023: torch runs CPU kernels single-threaded (2026-10-13, Phase 4)
+- **What:** `torch.set_num_threads(1)` at import, and `fraudlab/__init__.py` imports LightGBM before torch.
+- **Why:** Three OpenMP runtimes end up in one process: LightGBM's (Homebrew libomp), scikit-learn's and PyTorch's. Reproduced failures: importing torch before LightGBM segfaults in `lgb.train`, and multithreaded torch CPU ops after `sklearn.ensemble` is imported segfault. With single-threaded torch, every combination ran cleanly. LightGBM and scikit-learn keep 8 threads, and the heavier neural models use MPS, which doesn't use OpenMP.
+- **Consequence:** A fresh Mac needs `brew install libomp` for LightGBM (README quickstart). Scripts must import `fraudlab` before `torch`.
+
+### D024: The label cutoff is the deployment time (test start) (2026-10-13, Phase 4)
+- **What:** Training **and validation** labels are those known before the test window starts. Label-derived features for test rows use only labels known before deployment.
+- **Why:** The first draft cut labels at the start of the validation window, which made every validation label 0. Tuning and early stopping then silently optimised noise (found in the first benchmark: tuned LightGBM scored below default). This describes a model trained and tuned on data up to deployment, then frozen.
+
+### D025: Neural models train on per-epoch negative undersampling (2026-10-13, Phase 4)
+- **What:** GRU, FT-Transformer and GraphSAGE train each epoch on all positives plus a fresh 10% sample of negatives, for up to 20 epochs with patience 3 on validation AUPRC. Predictions are corrected with the closed form of Dal Pozzolo et al. (2015), p = βp_s / (βp_s − p_s + 1). This leaves rankings unchanged and restores calibration.
+- **Why (validation evidence):** In the first suite launch (stopped after two RQ1 cells), FT-Transformer's **validation** AUPRC was still creeping up when it hit its 6-epoch cap (0.001 → 0.007), and the GRU was still improving at its 8-epoch cap. Both were under-trained rather than converged, and full epochs cost about 15 s each for FT-Transformer, which can't fit the time budget. Undersampling makes an epoch about 10× cheaper, so the same budget buys convergence.
+- **Disclosure:** Two FT-Transformer **test** AUPRC values (0.003 and 0.045 at 0.1% fraud) were visible in that aborted run's log before this change. The change was motivated by the validation curves and the time budget above, applies identically to all three neural models, and was made without any further look at test results. All reported results come from a clean rerun.
+- **Rejected:** Class-weighted BCE (no speed-up). Tuning neural hyperparameters with Optuna (budget).
+
+### D026: LightGBM search space capped for the time budget (2026-10-13, Phase 4)
+- **What:** Learning rate in [0.02, 0.3] (was [0.01, 0.2]), at most 1,000 boosting rounds (was 2,000), early stopping after 30 rounds (was 50). Still 30 TPE trials for RQ1. RQ2 retrains use 10 trials.
+- **Why:** In the aborted run, one tuned fit took 218 s because low learning rates ran up to about 1,350 rounds. The whole suite projected to over 3 hours against a 90-minute budget. Narrowing the range removes the slowest corner of the space. Validation AUPRC on those two cells came from moderate learning rates (0.074 and 0.016).
+
+### D027: Observation: default LightGBM degenerates at 0.1% fraud (2026-10-13, Phase 4)
+- **What:** Default LightGBM on `small` at 0.1% fraud (114 training positives) produced predictions saturated at exactly 0 and 1 (351 distinct values), training AUPRC 0.14, and test ranking no better than random.
+- **Why it matters:** With `lambda_l2 = 0` and a tiny minimum hessian per leaf, leaf values explode when positives are this rare. This is genuine default behaviour, not a pipeline bug. It's what H1b ("tuning matters") is about, and it's reported as such rather than "fixed".
+
+### D028: Time-budget measures: two parallel lanes, 15 trials for RQ3/RQ4, fixed thread counts (2026-10-13, Phase 4)
+- **What:** `make experiments` runs RQ1 in one process and RQ2 → RQ3 → RQ4 in a second. LightGBM, Random Forest and Isolation Forest are fixed at 5 threads in both serial and parallel runs, so results don't depend on how the suite is scheduled. In RQ3 and RQ4, every LightGBM arm (with and without graph features, plus the semi-supervised variant) is tuned with 15 Optuna trials. RQ1 keeps the full 30, because H1 is specifically about tuned GBDT.
+- **Why:** A timed RQ1 cell after D025/D026 took about 150 s (tuned LightGBM 46 s, FT-Transformer 85 s), projecting about 117 minutes serially. The comparisons inside RQ3 and RQ4 are between LightGBM arms with *equal* budgets, so halving both keeps them fair. MISSION's "cleaner evidence over more models" rule kept every RQ instead of dropping one.
+- **Rejected:** Fewer seeds (weakens every test). Dropping FT-Transformer (it's RQ1's main modern arm while TabPFN is unavailable).
