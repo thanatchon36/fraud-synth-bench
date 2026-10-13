@@ -1,0 +1,20 @@
+{
+  "title": "fraud-synth-bench: Reproducible fraud-analytics research on synthetic data",
+  "upload_type": "software",
+  "description": "<p>A seeded synthetic transaction generator with pluggable fraud scenarios, drift schedules and label delay, plus a pre-registered comparison of classic and modern fraud-detection models under extreme imbalance, concept drift, ring fraud, label delay and investigator capacity limits. Every number in the accompanying paper is rebuilt by <code>make reproduce</code>.</p><p>All data is synthetic; no real transactions are used.</p>",
+  "creators": [
+    {
+      "name": "Chongmankhong, Thanatchon"
+    }
+  ],
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "keywords": [
+    "fraud detection",
+    "synthetic data",
+    "benchmark",
+    "reproducibility",
+    "gradient boosting",
+    "graph neural networks"
+  ]
+}
