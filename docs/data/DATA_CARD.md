@@ -44,7 +44,7 @@ On an M4 MacBook Air, `small` generates in about 0.2 s with a peak RSS of about 
 - 5% of legitimate transactions are P2P transfers to one of three fixed contacts.
 - Card-present payments have no customer device. Online payments and transfers carry one.
 
-**Legitimate look-alikes, scaled by `noise`** (default 0.5). They exist so that no single raw field separates the classes:
+**Legitimate look-alikes, scaled by `noise`** (default 0.4, set by the D014 difficulty check). They exist so that no single raw field separates the classes:
 - trips abroad (10% × noise of accounts, 2–7 days);
 - devices shared within a household (15% × noise);
 - switching to a new phone mid-window (10% × noise);

@@ -1,0 +1,62 @@
+"""Merge results/summary/*.json (+ hardware, timing, skips) into results/summary.json.
+
+Also writes results/tables/headline.md, the auto-generated table used in README.md.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import fraudlab
+from _common import RESULTS, SUMMARY, fmt, label, md_table, write_table
+
+
+def _read(path: Path) -> dict:
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def main() -> None:
+    s = {p.stem: _read(p) for p in sorted(SUMMARY.glob("*.json"))}
+    s["hardware"] = _read(RESULTS / "hardware.json")
+    s["timing"] = _read(RESULTS / "timing.json")
+    s["skipped"] = _read(RESULTS / "skipped.json")
+    s["version"] = fraudlab.__version__
+    s["hypotheses"] = {
+        h: v
+        for rq in ("rq1", "rq2", "rq3", "rq4", "rq5")
+        for h, v in s.get(rq, {}).get("hypotheses", {}).items()
+    }
+    (RESULTS / "summary.json").write_text(json.dumps(s, indent=2, sort_keys=True))
+
+    rq1 = s.get("rq1", {}).get("auprc", {})
+    rows = []
+    for m in (
+        "lgbm_tuned",
+        "lgbm_default",
+        "random_forest",
+        "logreg",
+        "gru",
+        "ft_transformer",
+        "tabpfn",
+        "iforest",
+        "autoencoder",
+    ):
+        if m in rq1:
+            rows.append([label(m)] + [fmt(_nan(rq1[m][r])) for r in ("0.001", "0.005", "0.01")])
+    if rows:
+        write_table(
+            "headline",
+            md_table(
+                ["Model", "AUPRC @ 0.1% fraud", "AUPRC @ 0.5% fraud", "AUPRC @ 1% fraud"], rows
+            ),
+        )
+    print("hypotheses:", s["hypotheses"])
+
+
+def _nan(d: dict) -> dict:
+    return {k: (float("nan") if v is None else v) for k, v in d.items()}
+
+
+if __name__ == "__main__":
+    main()

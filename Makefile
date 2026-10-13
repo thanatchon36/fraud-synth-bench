@@ -4,7 +4,9 @@ UV ?= uv
 RUN := $(UV) run --locked
 SEEDS ?= 0 1 2 3 4
 
-.PHONY: help setup test test-all lint format data quick clean
+.PHONY: help setup test test-all lint format data quick probe experiments reports reproduce clean
+RQS := rq1 rq2 rq3 rq4
+CAFFEINATE := $(shell command -v caffeinate >/dev/null && echo "caffeinate -i")
 
 help:  ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -32,8 +34,27 @@ data:  ## generate the `small` and `small_long` presets for every seed
 		$(RUN) fraudlab generate --preset small_long --seed $$s --out data/small_long/seed$$s; \
 	done
 
-quick:  ## smoke run (< 5 min): tiny dataset end to end
+quick:  ## smoke run (< 5 min): tiny dataset, 2 seeds, every model family
+	rm -rf results/quick
 	$(RUN) fraudlab generate --preset tiny --seed 0 --out data/tiny/seed0
+	$(RUN) fraudlab train --config experiments/configs/quick.yaml --results-dir results/quick
+
+probe:  ## hardware probe -> results/hardware.json
+	$(RUN) fraudlab probe
+
+experiments: probe  ## run every RQ config (resumable; ~90 min on an M4 Air)
+	@for rq in $(RQS); do \
+		$(CAFFEINATE) $(RUN) fraudlab train --config experiments/configs/$$rq.yaml || exit 1; \
+	done
+
+reports:  ## tables, figures and results/summary.json from the run logs
+	@for rq in rq1 rq2 rq3 rq4 rq5; do $(RUN) python experiments/$${rq}_report.py || exit 1; done
+	$(RUN) python experiments/data_card_stats.py
+	$(RUN) python experiments/build_summary.py
+
+reproduce: ## everything from scratch: clean runs, experiments, reports, paper
+	rm -rf results/runs results/timing.json results/skipped.json results/summary
+	$(MAKE) experiments reports paper
 
 clean:  ## remove generated data (results are kept)
 	rm -rf data

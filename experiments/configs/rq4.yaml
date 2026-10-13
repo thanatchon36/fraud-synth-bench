@@ -1,0 +1,15 @@
+# RQ4: label delay. Train [0, 50), valid [50, 60), deploy at day 60, test [60, 90).
+name: rq4
+protocol: delay
+dataset:
+  preset: small_long
+  fraud_rate: 0.005
+split_days: {valid: 50, test: 60}
+conditions:
+  label_mode: [oracle, delayed]
+seeds: [0, 1, 2, 3, 4]
+models:
+  - logreg
+  - lgbm_tuned
+  - gru
+  - lgbm_semi

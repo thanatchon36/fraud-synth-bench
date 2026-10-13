@@ -1,0 +1,17 @@
+# Smoke run for `make quick` and CI: tiny data, 2 seeds, minimal budgets (< 5 min).
+name: quick
+protocol: standard
+dataset:
+  preset: tiny
+conditions:
+  fraud_rate: [0.01]
+seeds: [0, 1]
+models:
+  - logreg
+  - lgbm_default
+  - {name: lgbm_tuned, params: {n_trials: 3}}
+  - {name: lgbm_tuned, features: tabular+graph, params: {n_trials: 3}}
+  - iforest
+  - {name: gru, params: {max_epochs: 1}}
+  - {name: graphsage, params: {max_epochs: 1}}
+  - {name: ft_transformer, params: {max_epochs: 1}}

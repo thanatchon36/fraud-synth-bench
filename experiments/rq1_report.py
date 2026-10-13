@@ -1,0 +1,158 @@
+"""RQ1 report: old vs. new under extreme imbalance.
+
+Inputs: results/runs/rq1.jsonl. Outputs: results/tables/rq1_*.md,
+results/figures/rq1_auprc.png, results/summary/rq1.json.
+"""
+
+from __future__ import annotations
+
+import matplotlib.pyplot as plt
+
+from _common import (
+    MODEL_ORDER,
+    by_seed,
+    dot_plot,
+    fmt,
+    label,
+    load_runs,
+    md_table,
+    paired_arrays,
+    save,
+    stat,
+    write_summary,
+    write_table,
+)
+from fraudlab.eval import holm, paired
+
+RATES = [0.001, 0.005, 0.01]
+MODERN = ["ft_transformer", "tabpfn"]
+
+
+def main() -> None:
+    runs = load_runs("rq1")
+    models = [m for m in MODEL_ORDER if any(r["model"] == m for r in runs)]
+
+    # Main table: AUPRC by fraud rate.
+    rows, auprc = [], {}
+    for m in models:
+        auprc[m] = {rate: stat(by_seed(runs, m, "auprc", fraud_rate=rate)) for rate in RATES}
+        rows.append([label(m)] + [fmt(auprc[m][r]) for r in RATES])
+    write_table("rq1_auprc", md_table(["Model"] + [f"AUPRC @ {r:.1%} fraud" for r in RATES], rows))
+
+    # Secondary metrics at 0.5%.
+    sec = [
+        "roc_auc",
+        "precision_at_k",
+        "recall_at_k",
+        "f1_at_valid_threshold",
+        "ece",
+        "latency_ms_per_1k",
+    ]
+    rows = []
+    fit_time = {}
+    for m in models:
+        cells = [
+            fmt(stat(by_seed(runs, m, k, fraud_rate=0.005)), 1 if k.startswith("lat") else 3)
+            for k in sec
+        ]
+        fit = [
+            r["fit_seconds"]
+            for r in runs
+            if r["model"] == m and r["condition"]["fraud_rate"] == 0.005
+        ]
+        fit_time[m] = stat(fit)
+        rows.append([label(m), *cells, fmt(fit_time[m], 1)])
+    write_table(
+        "rq1_secondary",
+        md_table(
+            [
+                "Model (0.5% fraud)",
+                "ROC-AUC",
+                "Precision@k",
+                "Recall@k",
+                "F1 @ valid thr.",
+                "ECE",
+                "ms / 1k preds",
+                "Fit s",
+            ],
+            rows,
+        ),
+    )
+
+    # Pre-registered comparisons, Holm within RQ1.
+    comps = []
+    for rate in RATES:
+        base = by_seed(runs, "lgbm_tuned", "auprc", fraud_rate=rate)
+        for m in MODERN:
+            other = by_seed(runs, m, "auprc", fraud_rate=rate)
+            if other:
+                a, b = paired_arrays(other, base)
+                c = paired(m, a, "lgbm_tuned", b)
+                c.rate = rate  # type: ignore[attr-defined]
+                comps.append(c)
+    a, b = paired_arrays(
+        by_seed(runs, "lgbm_tuned", "auprc", fraud_rate=0.001),
+        by_seed(runs, "lgbm_default", "auprc", fraud_rate=0.001),
+    )
+    h1b = paired("lgbm_tuned", a, "lgbm_default", b)
+    h1b.rate = 0.001  # type: ignore[attr-defined]
+    comps = holm([*comps, h1b])
+    rows = [
+        [
+            f"{c.rate:.1%}",
+            label(c.a),
+            label(c.b),
+            f"{c.mean_diff:+.3f}",
+            f"[{c.ci_low:+.3f}, {c.ci_high:+.3f}]",
+            f"{c.p_holm:.3f}",
+            c.verdict,
+        ]
+        for c in comps
+    ]
+    write_table(
+        "rq1_tests",
+        md_table(
+            ["Fraud rate", "A", "B", "Mean Δ AUPRC (A−B)", "95% CI", "Holm p", "Verdict"], rows
+        ),
+    )
+
+    modern_beats = [c for c in comps if c.a in MODERN and c.verdict == f"{c.a} beats {c.b}"]
+    h1a = "refuted" if modern_beats else "supported"
+    h1b_v = "supported" if h1b.verdict == "lgbm_tuned beats lgbm_default" else "refuted"
+
+    # Which model is best on mean AUPRC at each rate?
+    best = {r: max(models, key=lambda m: auprc[m][r]["mean"]) for r in RATES}
+
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.8), sharey=True)
+    for ax, r in zip(axes, RATES, strict=True):
+        dot_plot(ax, [(m, auprc[m][r]) for m in models], "Test AUPRC")
+        ax.set_title(f"{r:.1%} fraud", fontsize=10, loc="left")
+    fig.suptitle(
+        "RQ1: test AUPRC, mean and 95% CI over 5 seeds (small preset)",
+        x=0.01,
+        ha="left",
+        fontsize=11,
+    )
+    save(fig, "rq1_auprc")
+
+    skipped = sorted({m for m in MODERN if m not in models})
+    write_summary(
+        "rq1",
+        {
+            "auprc": {m: {f"{r}": auprc[m][r] for r in RATES} for m in models},
+            "fit_seconds_0p5": fit_time,
+            "secondary_0p5": {
+                m: {k: stat(by_seed(runs, m, k, fraud_rate=0.005)) for k in sec} for m in models
+            },
+            "tests": [c.to_dict() | {"rate": c.rate} for c in comps],
+            "best_by_rate": {f"{r}": best[r] for r in RATES},
+            "hypotheses": {"H1a": h1a, "H1b": h1b_v},
+            "skipped_models": skipped,
+            "n_seeds": max(auprc["lgbm_tuned"][r]["n"] for r in RATES),
+        },
+    )
+    print("RQ1", {"H1a": h1a, "H1b": h1b_v, "best": best, "skipped": skipped})
+
+
+if __name__ == "__main__":
+    main()

@@ -86,3 +86,7 @@ Each entry records what was decided, why, and which alternatives were rejected. 
 ### D017: The `accounts.account_role` ground truth is shipped in the raw tables (2026-10-13, Phase 3)
 - **What:** `account_role` (customer / mule / collector / synthetic) is in `accounts.parquet`, and is documented in the DATA_CARD as ground truth that must not be used as a feature.
 - **Why:** Analysis needs it (for example, recall on mule accounts). The feature builders in Phase 4 use an explicit allow-list of columns, so it can't leak by accident.
+
+### D014 outcome: noise lowered from 0.5 to 0.4 (2026-10-13, Phase 4)
+- **What:** The difficulty check (default LightGBM, `small`, seed 0, oracle labels, tabular features, validation window days 18–22) gave a validation AUPRC of **0.297 at noise 0.5**, just below the pre-registered lower bound of 0.30. Following the rule, `noise` was lowered by one step to **0.4**, which gave **0.551**. That is inside [0.30, 0.85], so 0.4 is now the default for every preset. The test window wasn't evaluated during this check.
+- **Observation, recorded for later:** a 0.1 change in noise moved validation AUPRC by 0.25. The validation window holds only 106 fraud transactions from a few dozen events, and untuned LightGBM is unstable at 0.5% prevalence. Expect high seed variance, which is why every RQ uses 5 paired seeds.

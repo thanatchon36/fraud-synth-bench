@@ -1,0 +1,20 @@
+# RQ1: old vs. new under extreme imbalance (docs/RESEARCH_QUESTIONS.md).
+# The 0.5% condition is reused by RQ5 (cost and capacity).
+name: rq1
+protocol: standard
+dataset:
+  preset: small
+conditions:
+  fraud_rate: [0.001, 0.005, 0.01]
+label_mode: oracle
+seeds: [0, 1, 2, 3, 4]
+models:
+  - logreg
+  - random_forest
+  - lgbm_default
+  - {name: lgbm_tuned, explain: true}
+  - iforest
+  - autoencoder
+  - gru
+  - ft_transformer
+  - tabpfn   # optional extra; skipped (and recorded) without TABPFN_TOKEN

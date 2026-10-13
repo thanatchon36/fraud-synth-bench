@@ -1,0 +1,20 @@
+# RQ2: fraudster adaptation (concept drift) at 60% of a 90-day timeline.
+name: rq2
+protocol: drift
+dataset:
+  preset: small_long
+  drift: rq2
+seeds: [0, 1, 2, 3, 4]
+drift_protocol:
+  deploy_day: 50     # static models: train [0, 40), valid [40, 50)
+  valid_days: 10
+  drift_day: 54      # 60% of 90 days
+  window_days: 7
+  retrain_every: 7   # retrains at days 57, 64, 71, 78, 85
+  recovery_days: [61, 68]
+models:
+  - logreg
+  - {name: lgbm_tuned, retrain: true, retrain_params: {n_trials: 10}}
+  - gru
+  - iforest
+  - autoencoder

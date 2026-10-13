@@ -1,0 +1,23 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "cpu_count_logical": 10,
+  "cpu_count_physical": 10,
+  "memory_total_gb": 16.0,
+  "memory_available_gb": 6.3,
+  "python": "3.12.15",
+  "torch": "2.14.1",
+  "mps_available": true,
+  "cuda_available": false,
+  "selected_device": "mps",
+  "mps_op_support": {
+    "matmul": true,
+    "gru": true,
+    "multihead_attention": true,
+    "scatter_reduce": true,
+    "embedding_bag": true
+  },
+  "cpu_matmul_gflops": 1804.6,
+  "mps_matmul_gflops": 1068.3
+}

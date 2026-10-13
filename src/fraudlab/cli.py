@@ -7,6 +7,7 @@ import json
 import sys
 import time
 from dataclasses import replace
+from pathlib import Path
 
 from fraudlab.synth import DRIFT_RQ2, generate, preset, write
 
@@ -34,6 +35,22 @@ def _generate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _train(args: argparse.Namespace) -> int:
+    from fraudlab.runner import run
+
+    seeds = [int(x) for x in args.seeds.split(",")] if args.seeds else None
+    models = args.models.split(",") if args.models else None
+    print(run(args.config, root=Path(args.results_dir), seeds=seeds, models=models))
+    return 0
+
+
+def _probe(args: argparse.Namespace) -> int:
+    from fraudlab.device import probe
+
+    print(json.dumps(probe(args.out), indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="fraudlab", description=__doc__)
     sub = p.add_subparsers(dest="command", required=True)
@@ -49,6 +66,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     g.add_argument("--drift", choices=["none", "rq2"], default="none")
     g.set_defaults(func=_generate)
+
+    tr = sub.add_parser("train", help="run an experiment config -> results/runs/<name>.jsonl")
+    tr.add_argument("--config", required=True)
+    tr.add_argument("--seeds", default=None, help="comma-separated subset, e.g. 0,1")
+    tr.add_argument("--models", default=None, help="comma-separated model labels")
+    tr.add_argument("--results-dir", default="results")
+    tr.set_defaults(func=_train)
+
+    pr = sub.add_parser("probe", help="hardware probe -> results/hardware.json")
+    pr.add_argument("--out", default="results/hardware.json")
+    pr.set_defaults(func=_probe)
     return p
 
 

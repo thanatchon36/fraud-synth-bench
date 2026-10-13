@@ -68,7 +68,7 @@ class GeneratorConfig:
     detection_prob: float = 0.95
     #: 0 = legitimate behaviour is perfectly regular; 1 = many legitimate
     #: look-alikes (travel, new devices, large purchases, shared devices).
-    noise: float = 0.5
+    noise: float = 0.4
     merchants_per_account: float = 0.05
     #: Share of legitimate transactions that are P2P transfers.
     p2p_share: float = 0.05

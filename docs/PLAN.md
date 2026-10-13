@@ -33,3 +33,13 @@ There's no code yet in this phase, so `make test lint` doesn't apply. It starts 
 4. Add the `fraudlab generate` CLI.
 5. Write `docs/data/DATA_CARD.md` with statistics computed from a generated `small` dataset.
 6. Measure generation time and peak memory for `small` and `full`.
+
+## Phase 4: Experiments (2026-10-13)
+
+1. `fraudlab probe`: device, memory, MPS op support, written to `results/hardware.json`.
+2. `fraudlab.features`: past-only tabular features (amount, time, velocity windows, account and merchant age, device novelty), a separate graph feature group (accounts per device, fan-in/out, merchant breadth, known-fraud neighbours, component size and PageRank from daily snapshots), per-account sequences for the GRU, and a temporal adjacency for GraphSAGE. Includes a leakage test: perturbing future rows must not change past features.
+3. `fraudlab.eval`: temporal splits, metrics (AUPRC, ROC-AUC, daily precision/recall@k, F1 at the validation threshold, ECE, cost, latency), and the stats protocol from RESEARCH_QUESTIONS (paired t, Holm, three-way verdict).
+4. `fraudlab.models`: a common `fit / predict_proba / explain` interface. LR, RF, LightGBM (default and Optuna-tuned), IsolationForest, autoencoder, GRU, GraphSAGE (pure PyTorch with temporal sampling), FT-Transformer, and TabPFN (optional extra, only when the token is available).
+5. The D014 difficulty check on the validation window.
+6. YAML experiment configs and runner writing `results/runs/*.jsonl`. One script per RQ producing tables, figures and its slice of `results/summary.json`. Stage timing goes to `results/timing.json`.
+7. Measure the suite's wall time, and trim model count or epochs if it exceeds 90 minutes, favouring clean RQ evidence.

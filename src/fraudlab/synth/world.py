@@ -187,6 +187,11 @@ def generate_legit(world: World, cfg: GeneratorConfig, rng: np.random.Generator)
         + C.MCC_LOG_OFFSET[C.P2P_MCC]
         + sigma * rng.standard_normal(p2p.sum())
     )
+    # People send round sums: half of transfers are rounded to 10, a fifth to 50.
+    r = rng.random(m)
+    to10, to50 = p2p & (r < 0.5), p2p & (r >= 0.5) & (r < 0.7)
+    amount[to10] = np.maximum(10, np.round(amount[to10] / 10) * 10)
+    amount[to50] = np.maximum(50, np.round(amount[to50] / 50) * 50)
 
     # Devices: card-present payments carry no customer device (set at the end).
     # Noise: households share one device between two accounts.
