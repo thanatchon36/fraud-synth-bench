@@ -74,3 +74,17 @@
 
 **Open issues**
 - Pandoc renders tables with equal-width columns, so some cells wrap.
+
+## Phase 6: Repository and publication (done 2026-10-13)
+
+**Shipped**
+- Public repo `thanatchon36/fraud-synth-bench` (Apache-2.0) with the MISSION §6 layout, README (quickstart, auto-generated headline table, RQs, extension points, limitations-first), and CITATION.cff.
+- Fresh-clone verification: `make setup && make test && make quick && make reproduce` exited 0. The suite took 47.9 min. Results agree with the earlier run (all 10 verdicts identical; see D031). The committed outputs are this run's.
+- Tagged `v0.1.0`.
+
+**Cut / blocked (owner action needed)**
+- **CI workflow** (`.github/workflows/ci.yml`, lint + test + quick) is written but not pushed. The gh OAuth token lacks the `workflow` scope (`gh auth refresh -h github.com -s workflow`, then commit the file).
+- **TabPFN** needs `TABPFN_TOKEN` (license acceptance at Prior Labs). The code path is ready.
+
+**Open issues**
+- GraphSAGE isn't bitwise reproducible on CPU (≤0.033 AUPRC across runs). The source wasn't identified.

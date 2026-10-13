@@ -6,7 +6,7 @@
   "cpu_count_logical": 10,
   "cpu_count_physical": 10,
   "memory_total_gb": 16.0,
-  "memory_available_gb": 7.0,
+  "memory_available_gb": 7.3,
   "python": "3.12.15",
   "torch": "2.14.1",
   "mps_available": true,
@@ -19,6 +19,6 @@
     "scatter_reduce": true,
     "embedding_bag": true
   },
-  "cpu_matmul_gflops": 1802.4,
-  "mps_matmul_gflops": 1351.5
+  "cpu_matmul_gflops": 1740.9,
+  "mps_matmul_gflops": 780.3
 }

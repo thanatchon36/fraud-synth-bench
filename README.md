@@ -13,7 +13,7 @@ make quick                        # smoke run, under 5 minutes
 make reproduce                    # all experiments → tables, figures, results/summary.json, paper/paper.pdf
 ```
 
-`make reproduce` takes about 90 minutes on a MacBook Air M4 (16 GB) and needs no GPU. Per-stage wall times are in [`results/timing.json`](results/timing.json), and the hardware profile is in [`results/hardware.json`](results/hardware.json).
+`make reproduce` took about 50 minutes on a MacBook Air M4 (16 GB) from a fresh clone, within a 90-minute budget, and needs no GPU. Per-stage wall times are in [`results/timing.json`](results/timing.json), and the hardware profile is in [`results/hardware.json`](results/hardware.json).
 
 ## Headline results
 
@@ -84,7 +84,7 @@ tests/          pytest (generator, features, eval, runner)
 2. Each fraud scenario has a clean mechanism. Real fraudsters mix tactics and adapt to the deployed model, and there's no feedback loop here.
 3. The experiments use about 200k transactions per dataset and 5 seeds. Ring scenarios contribute only a handful of events per dataset, so some comparisons are inconclusive by design rather than by accident.
 4. TabPFN results depend on an optional, licensed component. See `results/skipped.json` for whether it ran.
-5. Model budgets are deliberately modest so the suite fits a fanless laptop in about 90 minutes: Optuna uses ≤30 trials, and FT-Transformer is limited to d = 64, 3 blocks and ≤6 epochs. Larger budgets could change neural-model results.
+5. Model budgets are deliberately modest so the suite fits a fanless laptop in about 90 minutes: Optuna uses ≤30 trials, and the neural models use fixed architectures (FT-Transformer d = 64, 3 blocks) trained for ≤20 undersampled epochs. Larger budgets could change neural-model results.
 
 ## Citation
 
