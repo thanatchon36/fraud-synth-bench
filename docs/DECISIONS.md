@@ -29,3 +29,33 @@ Each entry records what was decided, why, and which alternatives were rejected. 
 - **What:** A few influential pre-2015 papers are included (Dal Pozzolo 2014, Gama 2014, He & Garcia 2009, Elkan 2001, Liu 2008, Schölkopf 2001).
 - **Why:** They define the operational framing (alert precision, drift, cost) that later fraud work relies on. Leaving them out would make the gap analysis look less grounded than it is.
 - **Rejected:** A strict 2015 cutoff.
+
+### D006: Thresholds pre-registered with a practical margin δ = 0.02 AUPRC (2026-10-13, Phase 2)
+- **What:** Every RQ has a numeric refutation criterion, fixed before data exists. "Beats" requires Holm-adjusted p < 0.05 **and** mean Δ ≥ 0.02. "Equivalent" requires the 95% CI of Δ to lie within ±0.02. Anything else is reported as inconclusive.
+- **Why:** With 5 seeds, p-values alone are fragile, and tiny AUPRC gaps have no operational meaning. A three-way verdict (beats / equivalent / inconclusive) stops us from reading noise as a finding.
+- **Rejected:** p-values only. Wilcoxon only (with n = 5, the two-sided minimum p is 0.0625, so it can never reach significance). Bootstrapping over test rows only (that ignores seed variance).
+
+### D007: `small_long` preset for the time-dependent RQs (2026-10-13, Phase 2)
+- **What:** RQ2 and RQ4 use a 90-day, 8k-account preset with about the same number of transactions (about 200k) as `small`.
+- **Why:** In a 30-day timeline, a 7–30-day label delay would hide almost every training label, and a drift at day 18 would leave too little post-drift data. Keeping the row count fixed keeps compute in line with `small`.
+- **Rejected:** `full` for RQ2/RQ4 (10× the compute and over the 90-minute budget). Shrinking the delay to fit 30 days (that departs from the MISSION's 7–30-day realism).
+
+### D008: TabPFN gets a ≤10k-row stratified temporal subsample (2026-10-13, Phase 2)
+- **What:** TabPFN's training set keeps all training-window frauds (capped at 50% of 10k) plus legitimate transactions sampled uniformly over time.
+- **Why:** TabPFN v2 is designed for ≤10k samples and runs CPU-only on this machine. A uniform subsample at 0.1% fraud would keep only about 10 positives. Stratifying gives it a fair chance, and the need to subsample is itself a reportable finding for RQ1.
+- **Rejected:** Uniform subsampling (unfair to TabPFN). Chunked ensembling over the full data (non-standard, and slow on CPU).
+
+### D009: Unconfirmed labels are treated as legitimate (RQ4) (2026-10-13, Phase 2)
+- **What:** Under label delay, a fraud whose label hasn't arrived by training time is labelled 0.
+- **Why:** This matches how production fraud systems train ("no chargeback yet" counts as genuine), and it's the mechanism that makes delay harmful.
+- **Rejected:** Dropping recent unlabelled rows. That's a valid alternative mitigation, but it would confound H4b.
+
+### D010: Drift and label delay are tested separately (2026-10-13, Phase 2)
+- **What:** RQ2 runs without label delay, and RQ4 runs without drift.
+- **Why:** Interacting the two would make it impossible to attribute any degradation to one cause. The interaction is listed in FUTURE_WORK.
+- **Rejected:** One combined realistic scenario as the main experiment.
+
+### D011: RQ5 capacity of k = 20 alerts/day (2026-10-13, Phase 2)
+- **What:** Investigator capacity is 20 alerts per day, with 10 minutes per alert, a $25 chargeback fee, and missed-fraud loss equal to the transaction amount.
+- **Why:** Capacity has to be below the daily fraud count (about 33/day in `small` at 0.5%), otherwise ranking quality barely matters. A first draft used k = 50, which exceeds the fraud count, so it was corrected before any data existed.
+- **Rejected:** Capacity as a percentage of volume. A fixed headcount is how fraud teams actually plan.

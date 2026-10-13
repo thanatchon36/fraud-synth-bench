@@ -12,3 +12,15 @@
 
 **Open issues**
 - Some entries describe metrics qualitatively ("top-k precision") where the papers use specific variants (for example, card precision@k vs. transaction precision@k).
+
+## Phase 2: Research questions (done 2026-10-13)
+
+**Shipped**
+- `docs/RESEARCH_QUESTIONS.md`: five falsifiable RQs (old vs. new, drift, graph vs. tabular, label delay, cost and capacity), each with hypotheses, the refuting experiment, metric and numeric threshold, plus a shared statistical protocol (5 paired seeds, t-intervals, Holm correction, δ = 0.02 equivalence margin).
+- DECISIONS D006–D011.
+
+**Cut**
+- The feedback loop (G10) and LLM features (G8) are out of scope for v0.1.
+
+**Open issues**
+- Thresholds such as 30% degradation (H2a) and 25% recovery (H4b) are judgement calls, not taken from the literature. They're recorded up front so they can't be changed after the results come in.
