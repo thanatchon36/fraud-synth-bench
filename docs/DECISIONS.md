@@ -59,3 +59,30 @@ Each entry records what was decided, why, and which alternatives were rejected. 
 - **What:** Investigator capacity is 20 alerts per day, with 10 minutes per alert, a $25 chargeback fee, and missed-fraud loss equal to the transaction amount.
 - **Why:** Capacity has to be below the daily fraud count (about 33/day in `small` at 0.5%), otherwise ranking quality barely matters. A first draft used k = 50, which exceeds the fraud count, so it was corrected before any data existed.
 - **Rejected:** Capacity as a percentage of volume. A fixed headcount is how fraud teams actually plan.
+
+### D012: numpy for simulation, Polars for tables and I/O (2026-10-13, Phase 3)
+- **What:** The generator simulates with vectorised numpy arrays (`TxBatch`) and emits Polars DataFrames with `Enum` categoricals, written as zstd parquet.
+- **Why:** `full` (2M rows) generates in about 4 s with a 1.2 GB peak RSS, far under the 10 GB cap. Polars `Enum` keeps categoricals compact and stable.
+- **Rejected:** pandas (higher memory for strings). A per-agent Python event loop like PaySim (orders of magnitude slower).
+
+### D013: Exact fraud budgets by trimming a time-ordered prefix (2026-10-13, Phase 3)
+- **What:** Injectors generate whole events until the budget is met, then drop the time-ordered tail of the last event.
+- **Why:** An exact realised fraud rate is needed for RQ1's rate sweep (0.1% has only about 200 fraud transactions in `small`). Time-ordering means a trimmed mule ring keeps inflows before outflows, as if the event was interrupted.
+- **Rejected:** Accepting overshoot (up to ±50% per scenario at 0.1%). Trimming in insertion order (that would cut all of a ring's outflows).
+
+### D014: Pre-registered difficulty check before any RQ experiment (2026-10-13, Phase 3)
+- **What:** Before running RQ experiments, train **default LightGBM** on `small` seed 0 and score the **validation** window only. If its AUPRC is outside **[0.30, 0.85]**, the generator is too easy or too hard to tell models apart. In that case only the `noise` knob may be adjusted (and logged here), and the check is repeated. The test window isn't looked at.
+- **Why:** A saturated benchmark (AUPRC ≈ 1) would make every RQ trivially "equivalent". A hopeless one would make every result noise. Fixing the target range and the single permitted knob in advance stops the data being tuned toward a favoured result.
+- **Rejected:** Free-form tuning of generator parameters after seeing model comparisons.
+
+### D015: Card-present payments have no customer device (2026-10-13, Phase 3)
+- **What:** `device_id` is null for `channel = pos`.
+- **Why:** At a physical terminal, the issuer doesn't observe a customer device. This makes device-based signals (ATO, shared devices) available only for online traffic and transfers, as in practice.
+
+### D016: Card testers choose merchants uniformly (2026-10-13, Phase 3)
+- **What:** The card-testing injector samples online-only merchants uniformly, not by popularity.
+- **Why:** Found by the multi-seed signature check. With popularity weighting, tiny datasets concentrated a burst on 1–2 merchants, which contradicts the pattern (testers spread over many low-profile merchants).
+
+### D017: The `accounts.account_role` ground truth is shipped in the raw tables (2026-10-13, Phase 3)
+- **What:** `account_role` (customer / mule / collector / synthetic) is in `accounts.parquet`, and is documented in the DATA_CARD as ground truth that must not be used as a feature.
+- **Why:** Analysis needs it (for example, recall on mule accounts). The feature builders in Phase 4 use an explicit allow-list of columns, so it can't leak by accident.

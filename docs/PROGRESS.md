@@ -24,3 +24,19 @@
 
 **Open issues**
 - Thresholds such as 30% degradation (H2a) and 25% recovery (H4b) are judgement calls, not taken from the literature. They're recorded up front so they can't be changed after the results come in.
+
+## Phase 3: Synthetic data generator (done 2026-10-13)
+
+**Shipped**
+- `src/fraudlab/synth/`: config and presets (`tiny`, `small`, `small_long`, `full`), the world model with legitimate behaviour and noise look-alikes, 8 registered scenario injectors (each with a docstring citing its source), and the generator with drift schedule, label delay, detection, five parquet tables, manifest and content hash.
+- `fraudlab generate` CLI. Makefile targets `setup / test / test-all / lint / format / data / quick / clean`. CI workflow (lint, test, quick).
+- `tests/test_synth.py`: 24 fast tests plus 1 slow test (`full` preset). Signature tests pass on seeds 0–4.
+- `docs/data/DATA_CARD.md` plus the auto-generated `DATA_CARD_STATS.md`.
+- Performance: `small` 0.2 s / 0.24 GB, `full` 4 s / 1.2 GB.
+
+**Cut**
+- No calibration to real aggregate statistics (FUTURE_WORK).
+
+**Open issues**
+- The difficulty check (D014) runs at the start of Phase 4, and may adjust `noise`.
+- Ring scenarios have only 4–8 events each at `small` with a 0.5% fraud rate, so expect high variance in RQ3.

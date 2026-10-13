@@ -19,3 +19,17 @@ There's no code yet in this phase, so `make test lint` doesn't apply. It starts 
 2. For each RQ, write: hypothesis, the experiment that would refute it, primary metric, decision threshold, dataset preset, and models.
 3. Fix the shared statistical protocol now, before any data exists, so thresholds can't be tuned after seeing results. That covers seeds, the paired test, multiple-comparison correction, and an equivalence margin.
 4. Check feasibility against the compute budget (M4, 16 GB, ≤90 min suite). Resolve the conflict between the 30-day `small` preset and the 7–30-day label delay that RQ2 and RQ4 need.
+
+## Phase 3: Synthetic data generator (2026-10-13)
+
+1. Scaffold the project: `pyproject.toml` (uv, Python 3.12, hatchling), `Makefile` (setup/test/lint/data/quick), ruff, pytest, CI workflow (lint + test).
+2. Build `fraudlab.synth`:
+   - `config.py`: `GeneratorConfig`, drift segments, label-delay settings, presets `tiny` (tests/quick), `small`, `small_long`, `full`.
+   - `population.py`: accounts, merchants, devices, contacts, and vectorised legitimate transactions (log-normal amounts, von Mises hour-of-day, MCC mix, P2P transfers) plus legitimate look-alikes controlled by `noise` (travel, new devices, big purchases, shared household devices).
+   - `scenarios/`: one class per fraud pattern behind a registry, each docstring citing its source. Patterns: card testing, account takeover, velocity abuse, mule network, merchant collusion, synthetic identity, friendly fraud, bust-out.
+   - `generator.py`: fraud budget = rate × legitimate volume, per drift segment; label delay and detection; outputs `transactions`, `accounts`, `merchants`, `edges`, `labels` parquet files plus `manifest.json` (version, params, seed, content hash).
+   - Independent RNG streams per component, so adding a scenario doesn't change the legitimate data.
+3. Write `tests/test_synth.py` to check determinism (same seed gives the same hash, a different seed a different hash), fraud-rate tolerance, a signature statistic for each injector, the drift schedule, label-delay bounds, and schema.
+4. Add the `fraudlab generate` CLI.
+5. Write `docs/data/DATA_CARD.md` with statistics computed from a generated `small` dataset.
+6. Measure generation time and peak memory for `small` and `full`.
