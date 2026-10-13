@@ -25,3 +25,6 @@ paper/build/
 .DS_Store
 .idea/
 .vscode/
+
+# smoke-run output (make quick)
+results/quick/
