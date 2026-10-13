@@ -4,6 +4,23 @@
 
 > **Limitations first: this is synthetic data.** No real transactions are used anywhere. The generator encodes *published patterns* of fraud, not measurements of any real payment system. The results are evidence about how models behave under controlled mechanisms, not predictions of production performance. See [Limitations](#limitations).
 
+## 📄 Paper
+
+### [Old and New Fraud Detectors Under Controlled Imbalance, Drift, Ring Fraud and Label Delay: A Reproducible Study on Synthetic Data](paper/paper.pdf)
+
+**[Read the PDF](paper/paper.pdf)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
+
+Key findings (all on synthetic data, 5 paired seeds per comparison):
+
+- **Classic beats modern here.** A tuned LightGBM was never beaten by FT-Transformer at 0.1–1% fraud, and it won clearly at 0.5% and 1%. TabPFN couldn't be evaluated (license token).
+- **Graph features, not graph networks.** LightGBM with hand-crafted graph features was never beaten by a time-respecting GraphSAGE, and those features helped once fraud rings were common.
+- **Operations matter more than the model.** A mid-stream switch in fraud tactics wiped out most of every model's ranking quality. Refitting weekly on all labels recovered it, while retraining with a validation holdout did not. Realistic label delay cost the best model about half its AUPRC.
+- **Measure value, not just AUPRC.** With a fixed analyst capacity, ranking alerts by expected loss recovered more money, and AUPRC ranked models only approximately like recovered value.
+
+<p align="center"><img src="results/figures/rq1_auprc.png" alt="Test AUPRC by model and fraud rate, mean and 95% CI over 5 seeds" width="900"></p>
+
+Every number in the paper is filled in from [`results/summary.json`](results/summary.json) by `make reproduce`.
+
 ## Quickstart
 
 ```bash
