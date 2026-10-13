@@ -8,7 +8,7 @@
 
 ### [Old and New Fraud Detectors Under Controlled Imbalance, Drift, Ring Fraud and Label Delay: A Reproducible Study on Synthetic Data](paper/paper.pdf)
 
-**[Read the PDF](paper/paper.pdf)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
+**[Read the PDF](paper/paper.pdf)** · **[Read on the web](https://claude.ai/artifact/WEmsw4FxGa7X9cQg79pLV5)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
 
 Key findings (all on synthetic data, 5 paired seeds per comparison):
 
