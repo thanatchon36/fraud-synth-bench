@@ -134,7 +134,6 @@ def main() -> None:
                 "legit_%",
                 "fraud_%",
             )
-            
         ),
         "",
         "## Label delay (observed fraud, days)",
