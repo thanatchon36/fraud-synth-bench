@@ -63,7 +63,7 @@ reproduce: ## everything from scratch: clean runs, experiments, reports, paper
 	rm -rf results/runs results/timing.json results/skipped.json results/summary
 	$(MAKE) experiments reports paper
 
-paper:  ## render paper.md + EXEC_SUMMARY.md from results/summary.json, build paper.pdf
+paper:  ## render paper.md + EXEC_SUMMARY.md from results/summary.json, build paper.pdf + docs/paper/index.html
 	$(RUN) python paper/build.py
 
 clean:  ## remove generated data (results are kept)

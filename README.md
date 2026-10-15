@@ -10,7 +10,7 @@
 
 ### [Old and New Fraud Detectors Under Controlled Imbalance, Drift, Ring Fraud and Label Delay: A Reproducible Study on Synthetic Data](paper/paper.pdf)
 
-**[Read the PDF](paper/paper.pdf)** · **[Read on the web](https://claude.ai/artifact/WEmsw4FxGa7X9cQg79pLV5)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
+**[Read the PDF](paper/paper.pdf)** · **[Read on the web](https://thanatchon36.github.io/fraud-synth-bench/paper/)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
 
 Key findings (all on synthetic data, 5 paired seeds per comparison):
 
@@ -79,7 +79,7 @@ src/fraudlab/
   cli.py        fraudlab generate | train | probe
 experiments/    configs/*.yaml + one report script per RQ
 results/        summary.json, tables/, figures/ (committed for the headline run)
-paper/          paper.tmpl.md → paper.md → paper.pdf
+paper/          paper.tmpl.md → paper.md → paper.pdf + web reader docs/paper/index.html (reader.html)
 docs/           literature review, research questions, decisions, data card, exec summary
 tests/          pytest (generator, features, eval, runner)
 ```

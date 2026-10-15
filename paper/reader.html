@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>$pagetitle$</title>
+<meta name="description" content="$if(description)$$description$$else$$pagetitle$$endif$">
+<meta name="author" content="$for(author)$$author$$sep$, $endfor$">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* One reading column (~46rem) with a verdict strip up top; tables and figures may break out a little.
+   Colour tokens are defined once on :root and redefined for dark mode. */
+:root {
+  --paper: #fbfbf9;
+  --ink: #17191c;
+  --ink-2: #4c5058;
+  --rule: #dcdcd6;
+  --accent: #1f5fae;
+  --accent-soft: #e6eef8;
+  --kept: #1d6b52;
+  --kept-soft: #e3f1ea;
+  --refuted: #a33a2c;
+  --refuted-soft: #f7e6e2;
+  --plate: #ffffff;
+  --quote: #f3f3ef;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15171a; --ink: #e8e9ec; --ink-2: #a6abb4; --rule: #30343a;
+    --accent: #7fb0ec; --accent-soft: #1b2a3d; --kept: #7dcfac; --kept-soft: #16302a;
+    --refuted: #f09a8c; --refuted-soft: #3a1f1b; --plate: #f4f4f2; --quote: #1d2024;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15171a; --ink: #e8e9ec; --ink-2: #a6abb4; --rule: #30343a;
+  --accent: #7fb0ec; --accent-soft: #1b2a3d; --kept: #7dcfac; --kept-soft: #16302a;
+  --refuted: #f09a8c; --refuted-soft: #3a1f1b; --plate: #f4f4f2; --quote: #1d2024;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 17px/1.62 var(--font-body); font-optical-sizing: auto; }
+.page { max-width: 46rem; margin: 0 auto; padding-inline: 20px; padding-block: 48px 72px;
+  display: flex; flex-direction: column; gap: 40px; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 650; text-wrap: balance; line-height: 1.2; }
+h1 { font-size: clamp(1.7rem, 4.2vw, 2.45rem); margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 1.45rem; margin: 2.2em 0 0.5em; }
+h3 { font-size: 1.15rem; margin: 1.8em 0 0.4em; }
+h4 { font-size: 1rem; margin: 1.4em 0 0.3em; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+code { font: 500 0.86em var(--font-mono); }
+pre { background: var(--quote); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px;
+  overflow-x: auto; font-size: 0.86rem; line-height: 1.5; }
+pre code { font-weight: 400; font-size: inherit; }
+
+.masthead { display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.kicker { margin: 0; font: 500 0.78rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.09em; color: var(--accent); }
+.byline { margin: 0; color: var(--ink-2); }
+.meta { margin: 0; font: 400 0.8rem/1.6 var(--font-mono); color: var(--ink-2); }
+.meta b { font-weight: 500; color: var(--ink); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.actions a { display: inline-block; padding: 6px 12px; border: 1px solid var(--rule); border-radius: 999px;
+  font: 500 0.78rem var(--font-mono); text-decoration: none; color: var(--ink); background: var(--plate); }
+:root[data-theme="dark"] .actions a, .actions a { background: transparent; }
+.actions a:hover { border-color: var(--accent); color: var(--accent); }
+
+.abstract h2, .verdicts h2, .toc h2 { margin: 0 0 10px; font-size: 0.82rem; font-family: var(--font-mono);
+  font-weight: 500; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-2); }
+.abstract p { margin: 0; font-size: 1.04rem; }
+.disclaimer { margin: 0; padding: 12px 14px; border-left: 3px solid var(--rule); background: var(--quote);
+  font-size: 0.9rem; color: var(--ink-2); border-radius: 0 6px 6px 0; }
+
+.verdicts .note { margin: 0 0 14px; color: var(--ink-2); font-size: 0.95rem; }
+.verdict-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 8px; }
+.v { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "id tag" "text text"; gap: 2px 10px;
+  padding: 10px 12px; border-radius: 6px; border-left: 3px solid; font-size: 0.9rem; line-height: 1.4; }
+.v-kept { background: var(--kept-soft); border-color: var(--kept); }
+.v-refuted { background: var(--refuted-soft); border-color: var(--refuted); }
+.v-id { grid-area: id; font: 500 0.85rem var(--font-mono); }
+.v-tag { grid-area: tag; justify-self: end; font: 500 0.72rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+.v-kept .v-tag { color: var(--kept); } .v-refuted .v-tag { color: var(--refuted); }
+.v-text { grid-area: text; }
+.v-text small { display: block; color: var(--ink-2); font-size: 0.8rem; margin-top: 2px; }
+
+.toc ul { margin: 0; padding-left: 1.2em; columns: 2 14rem; column-gap: 32px; }
+.toc li { break-inside: avoid; }
+.toc ul ul { columns: 1; padding-left: 1em; font-size: 0.92em; color: var(--ink-2); }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+
+.paper > section > h1, .paper h1 { font-size: 1.6rem; margin: 2em 0 0.5em; padding-top: 0.6em; border-top: 1px solid var(--rule); }
+.paper p, .paper li { hyphens: auto; }
+.paper p { margin: 0 0 1em; }
+.paper .header-section-number { color: var(--accent); margin-right: 0.5em; font-family: var(--font-mono); font-size: 0.85em; font-weight: 500; }
+.paper blockquote { margin: 1.2em 0; padding: 10px 16px; border-left: 3px solid var(--rule); background: var(--quote);
+  border-radius: 0 6px 6px 0; font-size: 0.93rem; color: var(--ink-2); }
+.paper blockquote p:last-child { margin-bottom: 0; }
+figure { margin: 1.6em 0; display: flex; flex-direction: column; gap: 10px; }
+figure img { background: var(--plate); padding: 12px; border-radius: 6px; border: 1px solid var(--rule); max-width: 100%; height: auto; }
+figcaption, caption { font-size: 0.88rem; color: var(--ink-2); line-height: 1.45; text-align: left; }
+caption { caption-side: top; padding-bottom: 8px; }
+.table-wrap, .paper table { max-width: 100%; }
+.paper table { display: block; overflow-x: auto; border-collapse: collapse; width: 100%; margin: 1.4em 0;
+  font: 400 0.8rem/1.45 var(--font-mono); font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+th { font-weight: 500; color: var(--ink-2); border-bottom-color: var(--ink-2); white-space: nowrap; }
+td:first-child { white-space: nowrap; }
+#refs { font-size: 0.88rem; line-height: 1.5; display: flex; flex-direction: column; gap: 6px; }
+.csl-entry { display: grid; grid-template-columns: 2.6em 1fr; }
+.csl-left-margin { color: var(--ink-2); font-family: var(--font-mono); font-size: 0.85em; }
+.colophon { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--ink-2); font-size: 0.85rem; }
+.colophon p { margin: 0 0 0.7em; }
+.footnotes { font-size: 0.88rem; color: var(--ink-2); }
+@media (max-width: 480px) { body { font-size: 16px; } .page { padding-block: 28px 48px; gap: 28px; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="page">
+<header class="masthead">
+  <p class="kicker"><!--KICKER--></p>
+  <h1>$title$</h1>
+  <p class="byline">$for(author)$$author$$sep$, $endfor$ · <a href="https://github.com/thanatchon36/fraud-synth-bench">github.com/thanatchon36/fraud-synth-bench</a></p>
+  <p class="meta"><!--META--></p>
+  <ul class="actions"><!--ACTIONS--></ul>
+</header>
+$if(abstract)$
+<section class="abstract" aria-label="Abstract">
+  <h2>Abstract</h2>
+  <p>$abstract$</p>
+</section>
+$endif$
+<p class="disclaimer"><!--DISCLAIMER--></p>
+<section class="verdicts" aria-label="Pre-registered hypotheses">
+  <h2>Pre-registered hypotheses</h2>
+  <p class="note"><!--VERDICT-NOTE--></p>
+  <ul class="verdict-list"><!--VERDICTS--></ul>
+</section>
+$if(toc)$
+<nav class="toc" aria-label="Contents"><h2>Contents</h2>
+$toc$
+</nav>
+$endif$
+<article class="paper">
+$body$
+</article>
+<footer class="colophon"><!--COLOPHON--></footer>
+</div>
+</body>
+</html>
