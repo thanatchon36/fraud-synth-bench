@@ -8,7 +8,7 @@
 
 ## 📄 Paper
 
-### [Old and New Fraud Detectors Under Controlled Imbalance, Drift, Ring Fraud and Label Delay: A Reproducible Study on Synthetic Data](paper/paper.pdf)
+### [Classic and Modern Fraud Detectors under Controlled Imbalance, Drift, Ring Fraud and Label Delay: A Reproducible Study on Synthetic Data](paper/paper.pdf)
 
 **[Read the PDF](paper/paper.pdf)** · **[Read on the web](https://thanatchon36.github.io/fraud-synth-bench/paper/)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
 
