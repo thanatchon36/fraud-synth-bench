@@ -80,7 +80,7 @@ All results are on test windows that no model or tuning procedure saw. Tables an
 
 : Test AUPRC (mean ± std over 5 seeds) by fraud rate, `small` preset.
 
-![RQ1: test AUPRC with 95% confidence intervals by fraud rate.](/results/figures/rq1_auprc.png){width=100%}
+![RQ1: test AUPRC by fraud rate on the `small` preset, mean and 95% confidence interval over 5 paired seeds. Isolation Forest and the autoencoder, below the rule, are the unsupervised references.](/results/figures/rq1_auprc.png){width=100%}
 
 At 0.5% and 1% fraud, tuned LightGBM had the highest mean AUPRC (0.738 ± 0.066 and 0.795 ± 0.014), with random forest close behind. FT-Transformer reached 0.488 ± 0.071 and 0.656 ± 0.060. The paired differences against tuned LightGBM were -0.250 (95% CI -0.364 to -0.135) and -0.140 (-0.211 to -0.069). At 0.1% fraud the gap was -0.282, with a Holm-adjusted $p$ of 0.063. The modern model never beat the tuned GBDT, so **H1a is not refuted**. Note that this holds for FT-Transformer only. TabPFN, the second pre-registered modern arm, did not run.
 
@@ -122,7 +122,7 @@ Cost matters as well. Tuned LightGBM needed 74 s to tune and fit, mostly for its
 
 : Static models deployed on day 50. Degradation is $D = 1 - \mathrm{AUPRC}_{post}/\mathrm{AUPRC}_{pre}$. The pre-drift window holds 4 days of test data.
 
-![RQ2: weekly test AUPRC. The tactic switch is at day 54. The dashed line is LightGBM refit weekly on all available labels.](/results/figures/rq2_weekly.png){width=100%}
+![RQ2: weekly test AUPRC before and after the drift on the `small_long` preset, mean of 5 seeds. The fraud tactics switch at day 54. Solid lines are models frozen at day 50; the dashed line is LightGBM refit weekly on all labels available at refit time.](/results/figures/rq2_weekly.png){width=100%}
 
 Once fraud switched from card-level attacks to bust-out, synthetic identities and mule rings, every supervised model collapsed. Logistic regression lost 94% of its pre-drift AUPRC, LightGBM 88% and the GRU 92%, with all intervals well above the 30% threshold. The unsupervised detectors did not degrade on average, but only because they started near the floor: Isolation Forest scored 0.207 after the drift, against 0.107 for static LightGBM. **H2a is not refuted.** After the drift, the weakest model before it, Isolation Forest, was the best static model, but none was useful.
 
@@ -150,7 +150,7 @@ Refitting LightGBM weekly on all labels available at refit time (the pre-registe
 
 : Test AUPRC and ring-scenario recall@k (k = 20/day) by the share of fraud coming from ring scenarios.
 
-![RQ3: AUPRC as relational structure increases.](/results/figures/rq3_ring_share.png){width=85%}
+![RQ3: test AUPRC as the share of fraud from ring scenarios increases (`small` preset, 0.5% fraud), mean and 95% confidence interval over 5 seeds. Points are offset slightly within each share so that the intervals do not overlap.](/results/figures/rq3_ring_share.png){width=85%}
 
 GraphSAGE was well below both LightGBM variants at every ring share. At 50% ring share its AUPRC was 0.453 ± 0.197, against 0.798 ± 0.048 for LightGBM with graph features. No comparison favoured GraphSAGE, so **H3a is not refuted**. Per-share verdicts are in the RQ3 test table below. At the higher ring shares GraphSAGE's seed-to-seed variance is large, and those comparisons are borderline or inconclusive rather than decisive. Graph features did help the tree model once rings were common, by +0.063 AUPRC at 50% and +0.051 at 75%. **H3b is not refuted.** With no ring fraud, the graph features made no difference (0.714 with them vs. 0.718 without). Relational signal therefore matters, but in this setting a GNN is not needed to use it. This agrees with GADBench [@tang2023gadbench] and with the Elliptic baselines [@weber2019elliptic]. Our GraphSAGE was not tuned and uses a simple node featurisation, which is a threat to this conclusion (Section 6).
 
@@ -176,7 +176,7 @@ GraphSAGE was well below both LightGBM variants at every ring share. At 50% ring
 
 : Test AUPRC (days 60–90) for models trained at day 60 with every detected fraud labelled (oracle), or only those whose label had arrived (delayed; unlabelled fraud counts as legitimate).
 
-![RQ4: oracle vs. delayed labels.](/results/figures/rq4_delay.png){width=85%}
+![RQ4: test AUPRC with oracle labels and with delayed labels on the `small_long` preset, mean of 5 seeds. The figure at the right of each row is the relative loss, $1 - \mathrm{AUPRC}_{delayed}/\mathrm{AUPRC}_{oracle}$.](/results/figures/rq4_delay.png){width=85%}
 
 Delay hurt every supervised model. Tuned LightGBM lost 53% of its AUPRC, the GRU 78%, and logistic regression, which had the least to lose, 15%. No model's interval lay below 10%, so **H4a is not refuted**. Adding Isolation Forest and autoencoder scores did not mitigate the loss. The recovery estimate was -0.734 ± 0.869 (95% CI [-1.813, 0.344]), meaning the augmented model did *worse* than plain LightGBM under delay. **H4b is formally not refuted, but only because the interval is extremely wide.** The evidence points against the hypothesis.
 
@@ -206,7 +206,7 @@ The size of these losses has a second cause, found after the run (DECISIONS D030
 
 : Operational metrics at 0.5% fraud with 20 alerts per day (3.3 investigator-hours per day).
 
-![RQ5: AUPRC vs. recovered loss per investigator-hour.](/results/figures/rq5_cost.png){width=80%}
+![RQ5: ranking quality against operational value at 20 alerts per day (`small` preset, 0.5% fraud): test AUPRC against recovered loss per investigator-hour, mean of 5 seeds.](/results/figures/rq5_cost.png){width=80%}
 
 With capacity fixed, tuned LightGBM recovered the most loss per investigator-hour (\$2,507), and random forest was effectively tied. Within the alert budget, tuned LightGBM caught 61% of the test-window fraud losses, against 29% for logistic regression. Ranking alerts by expected loss ($p \times$ amount) instead of $p$ raised recovered loss per hour for the best model by 27% (95% CI 9% to 46%), so **H5a is not refuted**. The lower bound sits just under the 10% target. The mean Kendall τ between model rankings by AUPRC and by recovered loss per hour was 0.73, below the pre-registered 0.8, so **H5b is refuted**. Isolation Forest is the clearest example. It ranks near the bottom on AUPRC (\$1,408 per hour) but recovers about as much per hour as FT-Transformer (\$1,384) and more than the GRU (\$1,101).
 

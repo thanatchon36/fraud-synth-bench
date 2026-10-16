@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.ticker import FuncFormatter
 from scipy.stats import kendalltau
 
 from _common import (
     INK,
     INK_2,
     MODEL_ORDER,
-    PALETTE,
     by_seed,
+    figure,
     fmt,
     label,
     load_runs,
@@ -84,30 +85,47 @@ def main() -> None:
     T = stat(taus)
     h5b = "not refuted" if T["mean"] >= 0.8 else "refuted"
 
-    fig, ax = plt.subplots(figsize=(6.5, 4.2))
+    fig, ax = figure(width=0.8, height=2.9)
     for m in models:
         x, y = stat(per[m]["auprc"])["mean"], stat(per[m][COST])["mean"]
-        ax.plot(x, y, "o", color=PALETTE[0], markersize=8, markeredgecolor="white")
+        ax.plot(
+            x,
+            y,
+            "o",
+            color=INK,
+            markersize=4.6,
+            markeredgecolor="white",
+            markeredgewidth=0.6,
+            zorder=3,
+        )
         # Below-left for the model that sits on top of tuned LightGBM.
         below = m == "random_forest"
         ax.annotate(
             label(m),
             (x, y),
             textcoords="offset points",
-            xytext=(-6, -12) if below else (6, 3),
+            xytext=(-5, -9) if below else (5, 3),
             ha="right" if below else "left",
-            fontsize=8,
+            fontsize=7.5,
             color=INK,
         )
-    ax.margins(x=0.15)
-    ax.set_xlabel("Test AUPRC", color=INK_2)
-    ax.set_ylabel("Recovered $ per investigator-hour", color=INK_2)
-    style_axes(ax)
-    ax.set_title(
-        f"RQ5: ranking quality vs. operational value (k={cm.alerts_per_day}/day)",
-        loc="left",
-        fontsize=11,
+    ax.text(
+        0.98,
+        0.04,
+        f"Kendall τ between the two rankings: {T['mean']:.2f} (mean of {T['n']} seeds)",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=7.5,
+        color=INK_2,
     )
+    ax.set_xlim(0, 0.9)
+    ax.set_xticks(np.arange(0, 0.91, 0.2))
+    ax.set_ylim(0, None)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.set_xlabel("Test AUPRC (mean of 5 seeds)".replace("5", str(T["n"])))
+    ax.set_ylabel("Recovered loss ($) per investigator-hour")
+    style_axes(ax, grid="y")
     save(fig, "rq5_cost")
 
     # Business view: share of fraud losses recovered within capacity.

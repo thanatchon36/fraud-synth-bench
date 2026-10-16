@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from _common import (
     INK_2,
     color,
+    figure,
     fmt,
     label,
+    legend_above,
     load_runs,
     md_table,
     save,
+    series_handle,
     stat,
     style_axes,
     write_summary,
@@ -21,6 +23,7 @@ from _common import (
 
 SUPERVISED = ["logreg", "lgbm_tuned", "gru"]
 UNSUPERVISED = ["iforest", "autoencoder"]
+DRIFT_DAY = 54
 
 
 def _ci(s: dict) -> str:
@@ -121,9 +124,10 @@ def main() -> None:
         ),
     )
 
-    # Figure: weekly AUPRC over time.
-    fig, ax = plt.subplots(figsize=(8, 4))
+    # Figure: weekly AUPRC over time, one line per static model and the dashed refit policy.
+    fig, ax = figure(width=1.0, height=2.9)
     series = [*SUPERVISED, *UNSUPERVISED, "lgbm_tuned+refit"]
+    handles, n_seeds, starts = [], 0, []
     for m in series:
         rs = list(retrain.values()) if m.endswith("+refit") else list(static[m].values())
         if not rs:
@@ -135,33 +139,39 @@ def main() -> None:
                 for r in rs
             ]
         )
-        mean = np.nanmean(vals, axis=0)
+        n_seeds = max(n_seeds, len(rs))
+        dashed = m.endswith("+refit")
         ax.plot(
             starts,
-            mean,
+            np.nanmean(vals, axis=0),
             marker="o",
-            markersize=5,
-            linewidth=2,
+            markersize=3.6,
+            markeredgecolor="white",
+            markeredgewidth=0.6,
+            linewidth=1.1,
             color=color(m),
-            linestyle=(0, (4, 2)) if m.endswith("+refit") else "-",
-            label=label(m),
+            linestyle=(0, (4, 2)) if dashed else "-",
+            zorder=3,
         )
-    ax.axvline(54, color=INK_2, linewidth=1, linestyle=(0, (3, 3)))
+        handles.append(series_handle(m, dashed=dashed))
+    ax.axvline(DRIFT_DAY, color=INK_2, linewidth=0.7, linestyle=(0, (3, 2)), zorder=1)
     ax.text(
-        54.3,
-        ax.get_ylim()[1] * 0.97,
-        "fraud tactics switch (day 54)",
-        color=INK_2,
-        fontsize=8,
+        DRIFT_DAY + 0.4,
+        0.985,
+        f"fraud tactics switch (day {DRIFT_DAY})",
+        ha="left",
         va="top",
+        fontsize=7.5,
+        color=INK_2,
     )
-    ax.set_xlabel("Start of 7-day test window (day)", color=INK_2)
-    ax.set_ylabel("Test AUPRC (mean of 5 seeds)", color=INK_2)
-    style_axes(ax)
-    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=3)
-    ax.set_title(
-        "RQ2: weekly AUPRC before and after drift (small_long preset)", loc="left", fontsize=11
-    )
+    ax.set_xticks(starts)
+    ax.set_xlim(min(starts) - 1.5, max(starts) + 1.5)
+    ax.set_ylim(0, 1)
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    ax.set_xlabel("Start of the 7-day test window (day)")
+    ax.set_ylabel(f"Test AUPRC (mean of {n_seeds} seeds)")
+    style_axes(ax, grid="y")
+    legend_above(ax, handles, ncols=3)
     save(fig, "rq2_weekly")
 
     write_summary(

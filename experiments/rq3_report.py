@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from _common import (
-    INK_2,
     by_seed,
     color,
+    figure,
     fmt,
     label,
+    legend_above,
     load_runs,
     md_table,
     paired_arrays,
     pretty_verdict,
     save,
+    series_handle,
     stat,
     style_axes,
     write_summary,
@@ -104,32 +105,36 @@ def main() -> None:
     h3b_wins = [c for c in comps if c.h == "H3b" and c.verdict.startswith("lgbm_tuned+graph beats")]
     h3b = "not refuted" if h3b_wins else "refuted"
 
-    fig, ax = plt.subplots(figsize=(6.5, 4))
+    fig, ax = figure(width=0.85, height=2.7)
     x = np.array(SHARES) * 100
+    n_seeds = max(auprc[m][s]["n"] for m in MODELS for s in SHARES)
     for i, m in enumerate(MODELS):
         mean = np.array([auprc[m][s]["mean"] for s in SHARES])
         lo = np.array([auprc[m][s]["ci_low"] for s in SHARES])
         hi = np.array([auprc[m][s]["ci_high"] for s in SHARES])
-        off = (i - 1) * 1.2
+        off = (i - (len(MODELS) - 1) / 2) * 1.6
         ax.errorbar(
             x + off,
             mean,
             yerr=[mean - lo, hi - mean],
             color=color(m),
             marker="o",
-            markersize=6,
-            linewidth=2,
+            markersize=3.8,
+            markeredgecolor="white",
+            markeredgewidth=0.6,
+            linewidth=1.1,
+            elinewidth=0.9,
             capsize=0,
-            label=label(m),
+            zorder=3,
         )
     ax.set_xticks(x, [f"{s:.0%}" for s in SHARES])
-    ax.set_xlabel("Share of fraud from ring scenarios", color=INK_2)
-    ax.set_ylabel("Test AUPRC (mean, 95% CI)", color=INK_2)
-    style_axes(ax)
-    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3)
-    ax.set_title(
-        "RQ3: graph structure vs. model family (small preset, 0.5% fraud)", loc="left", fontsize=11
-    )
+    ax.set_xlim(-8, 83)
+    ax.set_ylim(0, 1)
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    ax.set_xlabel("Share of fraud from ring scenarios")
+    ax.set_ylabel(f"Test AUPRC (mean and 95% CI, {n_seeds} seeds)")
+    style_axes(ax, grid="y")
+    legend_above(ax, [series_handle(m) for m in MODELS], ncols=3)
     save(fig, "rq3_ring_share")
 
     write_summary(

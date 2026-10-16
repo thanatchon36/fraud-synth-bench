@@ -7,7 +7,8 @@ Placeholders (every number in the paper comes from one of these):
   path, then a format. Formats: any Python format spec, ``pct`` / ``pct1`` (percent),
   ``pm`` (mean ± std of a stat dict), ``ci`` (a stat dict's 95% CI), ``int``, ``str``.
 * ``{{ table:rq1_auprc }}``: the Markdown table results/tables/rq1_auprc.md.
-* ``{{ figure:rq1_auprc }}``: the path of results/figures/rq1_auprc.png.
+* ``{{ figure:rq1_auprc }}``: the path of results/figures/rq1_auprc.png. The PDF build swaps in
+  the SVG beside it, where one exists, so the typeset figures are vector.
 
 A missing key is an error, never a blank. Usage: ``python paper/build.py [--no-pdf] [--no-html]``.
 """
@@ -35,6 +36,7 @@ DISCLAIMER = (
     "controlled mechanisms, not production performance."
 )
 HYPOTHESIS = re.compile(r"^- \*\*(H\d[ab])(?: \([^)]*\))?:\*\* (.+)$", re.M)
+FIGURE_PNG = re.compile(r'image\("(/results/figures/[\w-]+)\.png"')
 
 
 def lookup(data: dict, path: str):
@@ -87,6 +89,18 @@ def render(text: str, summary: dict) -> str:
     return out
 
 
+def vector_figures(typst_source: str) -> str:
+    """Point each figure at its SVG copy, where one exists, so the PDF figures are vector."""
+
+    def swap(m: re.Match) -> str:
+        stem = m.group(1)
+        if (ROOT / stem.lstrip("/")).with_suffix(".svg").is_file():
+            return f'image("{stem}.svg"'
+        return m.group(0)
+
+    return FIGURE_PNG.sub(swap, typst_source)
+
+
 def build_pdf(md: Path) -> Path:
     if shutil.which("pandoc") is None:
         raise SystemExit("pandoc not found: install pandoc >= 3.1 to build the PDF")
@@ -116,6 +130,7 @@ def build_pdf(md: Path) -> Path:
         check=True,
         cwd=PAPER,
     )
+    typ.write_text(vector_figures(typ.read_text()))
     pdf = PAPER / "paper.pdf"
     typst.compile(str(typ), output=str(pdf), root=str(ROOT))
     return pdf

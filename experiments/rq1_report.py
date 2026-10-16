@@ -6,12 +6,16 @@ results/figures/rq1_auprc.png, results/summary/rq1.json.
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
+import math
+
+import numpy as np
 
 from _common import (
+    INK_2,
     MODEL_ORDER,
     by_seed,
     dot_plot,
+    figure,
     fmt,
     label,
     load_runs,
@@ -27,6 +31,7 @@ from fraudlab.eval import holm, paired
 
 RATES = [0.001, 0.005, 0.01]
 MODERN = ["ft_transformer", "tabpfn"]
+UNSUPERVISED = ["iforest", "autoencoder"]
 
 
 def main() -> None:
@@ -124,16 +129,35 @@ def main() -> None:
     # Which model is best on mean AUPRC at each rate?
     best = {r: max(models, key=lambda m: auprc[m][r]["mean"]) for r in RATES}
 
-    fig, axes = plt.subplots(1, 3, figsize=(11, 3.8), sharey=True)
-    for ax, r in zip(axes, RATES, strict=True):
-        dot_plot(ax, [(m, auprc[m][r]) for m in models], "Test AUPRC")
-        ax.set_title(f"{r:.1%} fraud", fontsize=10, loc="left")
-    fig.suptitle(
-        "RQ1: test AUPRC, mean and 95% CI over 5 seeds (small preset)",
-        x=0.01,
-        ha="left",
-        fontsize=11,
-    )
+    # Figure: one panel per fraud rate, the same AUPRC axis in each so the panels compare. The
+    # unsupervised references sit below a rule.
+    unsupervised = [m for m in models if m in UNSUPERVISED]
+    ordered = [m for m in models if m not in UNSUPERVISED] + unsupervised
+    top = max(auprc[m][r]["ci_high"] for m in models for r in RATES)
+    xmax = math.ceil(top * 10) / 10
+    fig, axes = figure(width=1.0, height=2.6, ncols=3, sharey=True)
+    for panel, (ax, r) in zip("abc", zip(axes, RATES, strict=True), strict=True):
+        dot_plot(
+            ax,
+            [(m, auprc[m][r]) for m in ordered],
+            "Test AUPRC",
+            separators=(len(ordered) - len(unsupervised),) if unsupervised else (),
+        )
+        ax.set_xlim(0, xmax)
+        ax.set_xticks(np.arange(0, xmax + 1e-9, 0.2))
+        ax.set_title(f"({panel}) {r:.1%} fraud")
+    if unsupervised:
+        # Name the group below the rule, in the panel whose right-hand side is empty there.
+        axes[-1].text(
+            xmax,
+            len(unsupervised) - 0.5 - 0.08,
+            "unsupervised references",
+            ha="right",
+            va="top",
+            fontsize=7,
+            color=INK_2,
+            style="italic",
+        )
     save(fig, "rq1_auprc")
 
     skipped = sorted({m for m in MODERN if m not in models})

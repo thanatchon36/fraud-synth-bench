@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.transforms import blended_transform_factory as blend
 
 from _common import (
+    INK,
     INK_2,
+    LINE,
     PALETTE,
     by_seed,
+    figure,
     fmt,
     label,
+    legend_above,
     load_runs,
     md_table,
     save,
@@ -21,6 +26,8 @@ from _common import (
 )
 
 SUPERVISED = ["logreg", "lgbm_tuned", "gru"]
+# Label condition is the variable here, not the model: ink for the oracle, orange for delay.
+ORACLE, DELAYED = INK, PALETTE[1]
 
 
 def validation_positives(runs: list[dict]) -> dict[str, dict]:
@@ -129,34 +136,59 @@ def main() -> None:
         ),
     )
 
-    fig, ax = plt.subplots(figsize=(6.5, 3.6))
+    # Figure: a dumbbell per model from delayed to oracle labels, the relative loss at the right.
+    fig, ax = figure(width=0.85, height=2.1)
     ys = np.arange(len(MODELS))[::-1]
+    n_seeds = max(stat(au[m]["oracle"])["n"] for m in MODELS)
     for y, m in zip(ys, MODELS, strict=True):
         o, d = stat(au[m]["oracle"]), stat(au[m]["delayed"])
-        ax.plot([d["mean"], o["mean"]], [y, y], color=INK_2, linewidth=2)
-        ax.plot(
-            o["mean"],
+        ax.plot([d["mean"], o["mean"]], [y, y], color=LINE, linewidth=1.2, zorder=1)
+        for value, fill in ((o["mean"], ORACLE), (d["mean"], DELAYED)):
+            ax.plot(
+                value,
+                y,
+                "o",
+                color=fill,
+                markersize=4.6,
+                markeredgecolor="white",
+                markeredgewidth=0.6,
+                zorder=3,
+            )
+        ax.text(
+            1.0,
             y,
-            "o",
-            color=PALETTE[0],
-            markersize=8,
-            markeredgecolor="white",
-            label="Oracle labels" if y == ys[0] else None,
-        )
-        ax.plot(
-            d["mean"],
-            y,
-            "o",
-            color=PALETTE[1],
-            markersize=8,
-            markeredgecolor="white",
-            label="Delayed labels (7–30 d)" if y == ys[0] else None,
+            f"−{loss[m]['mean']:.0%}",
+            transform=blend(ax.transAxes, ax.transData),
+            ha="left",
+            va="center",
+            fontsize=7.5,
+            color=INK_2,
         )
     ax.set_yticks(ys, [label(m) for m in MODELS])
-    ax.set_xlabel("Test AUPRC (mean of 5 seeds)", color=INK_2)
-    style_axes(ax)
-    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2)
-    ax.set_title("RQ4: effect of label delay (small_long preset)", loc="left", fontsize=11)
+    ax.set_ylim(-0.6, len(MODELS) - 0.4)
+    ax.set_xlim(0, 0.8)
+    ax.set_xticks(np.arange(0, 0.81, 0.2))
+    ax.set_xlabel(f"Test AUPRC (mean of {n_seeds} seeds)")
+    style_axes(ax, grid="x", left=False)
+    legend_above(
+        ax,
+        [
+            Line2D([], [], marker="o", linestyle="none", markersize=4.6, color=ORACLE, label=t)
+            for t in ("Oracle labels",)
+        ]
+        + [
+            Line2D(
+                [],
+                [],
+                marker="o",
+                linestyle="none",
+                markersize=4.6,
+                color=DELAYED,
+                label="Delayed labels (7–30 d)",
+            )
+        ],
+        ncols=2,
+    )
     save(fig, "rq4_delay")
 
     write_summary(
