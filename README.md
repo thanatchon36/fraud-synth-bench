@@ -10,7 +10,7 @@
 
 ### [Classic and Modern Fraud Detectors under Controlled Imbalance, Drift, Ring Fraud and Label Delay: A Reproducible Study on Synthetic Data](paper/paper.pdf)
 
-**[Read the PDF](paper/paper.pdf)** · **[Read on the web](https://thanatchon36.github.io/fraud-synth-bench/paper/)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
+**[Download the PDF](https://github.com/thanatchon36/fraud-synth-bench/raw/main/paper/paper.pdf)** · **[Read on the web](https://thanatchon36.github.io/fraud-synth-bench/paper/)** · [Markdown version](paper/paper.md) · [Executive summary](docs/EXEC_SUMMARY.md) · [Pre-registered research questions](docs/RESEARCH_QUESTIONS.md)
 
 Key findings (all on synthetic data, 5 paired seeds per comparison):
 
