@@ -1,6 +1,9 @@
 # fraud-synth-bench
 
+[![Paper](https://img.shields.io/badge/Paper-read_on_the_web-b31b1b)](https://thanatchon36.github.io/fraud-synth-bench/paper/)
+[![Dataset on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-fraud--synth--bench-ffd21e)](https://huggingface.co/datasets/thanatchon36/fraud-synth-bench)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23343483.svg)](https://doi.org/10.5281/zenodo.23343483)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue)](LICENSE)
 
 **Reproducible fraud-analytics research on synthetic data.** This repo contains a seeded transaction generator with pluggable fraud scenarios, and a pre-registered comparison of classic and modern fraud models. The comparison runs under extreme class imbalance, concept drift, ring fraud, label delay and limited investigator capacity. Every number in the paper is rebuilt by one command.
 
@@ -19,9 +22,23 @@ Key findings (all on synthetic data, 5 paired seeds per comparison):
 - **Operations matter more than the model.** A mid-stream switch in fraud tactics wiped out most of every model's ranking quality. Refitting weekly on all labels recovered it, while retraining with a validation holdout did not. Realistic label delay cost the best model about half its AUPRC.
 - **Measure value, not just AUPRC.** With a fixed analyst capacity, ranking alerts by expected loss recovered more money, and AUPRC ranked models only approximately like recovered value.
 
-<p align="center"><img src="results/figures/rq1_auprc.png" alt="Test AUPRC by model and fraud rate, mean and 95% CI over 5 seeds" width="900"></p>
+<p align="center"><img src="results/figures/rq2_weekly.png" alt="Weekly test AUPRC around a fraud-tactics switch at day 54. Every supervised model collapses after the switch; only LightGBM refit weekly on all labels climbs back." width="900"></p>
+<p align="center"><em>When fraudsters switch tactics at day 54, every supervised model collapses. Only LightGBM refit weekly on all labels climbs back, and it takes weeks.</em></p>
 
 Every number in the paper is filled in from [`results/summary.json`](results/summary.json) by `make reproduce`.
+
+## Dataset
+
+All 45 datasets from the paper (9 conditions × 5 seeds, about 200k transactions each) and the per-run results are on Hugging Face: **[thanatchon36/fraud-synth-bench](https://huggingface.co/datasets/thanatchon36/fraud-synth-bench)**. Every content hash matches the run logs, so they're exactly the data the paper's experiments used.
+
+```python
+from datasets import load_dataset
+
+tx = load_dataset("thanatchon36/fraud-synth-bench", "small_transactions", split="seed0")
+labels = load_dataset("thanatchon36/fraud-synth-bench", "small_labels", split="seed0")
+```
+
+Read the [leakage notes](https://huggingface.co/datasets/thanatchon36/fraud-synth-bench#%E2%9A%A0%EF%B8%8F-avoiding-leakage) before training: some columns reveal the answer.
 
 ## Quickstart
 
@@ -54,6 +71,29 @@ Pre-registered hypotheses: H1a: not refuted, H1b: refuted, H2a: not refuted, H2b
 <!-- headline:end -->
 
 The full results, with statistical tests, are in the paper ([`paper/paper.pdf`](paper/paper.pdf), source [`paper/paper.md`](paper/paper.md)). A one-page business summary is in [`docs/EXEC_SUMMARY.md`](docs/EXEC_SUMMARY.md).
+
+## Figures
+
+<table>
+<tr>
+<td width="50%"><img src="results/figures/rq1_auprc.png" alt="RQ1: test AUPRC with 95% confidence intervals for eight models at 0.1%, 0.5% and 1% fraud"></td>
+<td width="50%"><img src="results/figures/rq3_ring_share.png" alt="RQ3: AUPRC as the share of ring fraud grows, for LightGBM, LightGBM with graph features, and GraphSAGE"></td>
+</tr>
+<tr>
+<td><b>RQ1: imbalance.</b> Test AUPRC at 0.1%, 0.5% and 1% fraud. FT-Transformer never beats tuned LightGBM. At 0.1% the intervals are wide.</td>
+<td><b>RQ3: ring fraud.</b> Hand-crafted graph features lift LightGBM once rings are common, and GraphSAGE never beats it.</td>
+</tr>
+<tr>
+<td><img src="results/figures/rq4_delay.png" alt="RQ4: AUPRC with oracle labels and with 7 to 30 day delayed labels for four models"></td>
+<td><img src="results/figures/rq5_cost.png" alt="RQ5: test AUPRC against recovered loss per investigator-hour for eight models"></td>
+</tr>
+<tr>
+<td><b>RQ4: label delay.</b> A 7–30-day delay costs tuned LightGBM 53% of its AUPRC. Anomaly scores don't rescue it.</td>
+<td><b>RQ5: value.</b> AUPRC and recovered loss per investigator-hour rank models only partly alike (Kendall τ = 0.73).</td>
+</tr>
+</table>
+
+All on synthetic data, 5 seeds. Vector versions are in [`results/figures/`](results/figures/).
 
 ## Research questions
 
